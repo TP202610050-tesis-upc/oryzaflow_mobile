@@ -33,9 +33,24 @@ dependencies:
   # Logs
   logger: ^2.3.0
 
-dev_dependencies:
+  # Inyección de dependencias
+  get_it: ^8.0.0
+
+  # Navegación
+  go_router: ^14.0.0
+
+  # UI Extras
+  shimmer: ^3.0.0
+  equatable: ^2.0.5
+
+  # File system & sharing
+  path_provider: ^2.1.4
+  share_plus: ^9.0.0
+
   flutter_localizations:
     sdk: flutter
+
+dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
