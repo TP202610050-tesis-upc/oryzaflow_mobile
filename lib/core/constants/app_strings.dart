@@ -105,14 +105,11 @@ class AppStrings {
   // Monitoring
   static const String monitoreo = 'Monitoreo';
   static const String parametros = 'Parámetros';
-  static const String controlDeCampo = 'Control de Campo';
   static const String configEsp32 = 'Config. ESP32';
   static const String lecturasEnVivo = 'Lecturas en Vivo';
   static const String ultimasDoceHoras = 'Últimas 2 horas';
-  static const String ventilador = 'Ventilador';
-  static const String calefactor = 'Calefactor';
-  static const String modoManual = 'Modo Manual';
-  static const String modoAutomatico = 'Modo Automático';
+  static const String volteoManual = 'Volteo manual';
+  static const String registrarVolteo = 'Registrar volteo';
   static const String ipAddress = 'Dirección IP';
   static const String puerto = 'Puerto';
   static const String intervaloEnvio = 'Intervalo de envío (s)';

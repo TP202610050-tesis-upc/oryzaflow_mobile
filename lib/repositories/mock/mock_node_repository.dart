@@ -3,6 +3,7 @@ import '../../models/esp32_config_model.dart';
 import '../../models/node_model.dart';
 import '../../models/sensor_reading_model.dart';
 import '../../models/threshold_model.dart';
+import '../../models/volteo_model.dart';
 import '../i_node_repository.dart';
 import 'mock_data.dart';
 
@@ -11,9 +12,7 @@ class MockNodeRepository implements INodeRepository {
   final Map<String, Esp32ConfigModel> _configs =
       Map.from(MockData.configuraciones);
   final Map<String, ThresholdModel> _umbrales = Map.from(MockData.umbrales);
-  final Map<String, bool> _ventiladores = {};
-  final Map<String, bool> _calefactores = {};
-  final Map<String, bool> _modoManual = {};
+  int _volteoSeq = 0;
   static const _delay = Duration(milliseconds: 800);
 
   @override
@@ -79,20 +78,13 @@ class MockNodeRepository implements INodeRepository {
   }
 
   @override
-  Future<void> activarVentilador(String nodoId, bool activar) async {
+  Future<VolteoModel> registrarVolteo(String nodoId) async {
     await Future.delayed(_delay);
-    _ventiladores[nodoId] = activar;
-  }
-
-  @override
-  Future<void> activarCalefactor(String nodoId, bool activar) async {
-    await Future.delayed(_delay);
-    _calefactores[nodoId] = activar;
-  }
-
-  @override
-  Future<void> setModoManual(String nodoId, bool manual) async {
-    await Future.delayed(_delay);
-    _modoManual[nodoId] = manual;
+    return VolteoModel(
+      id: 'volteo-${++_volteoSeq}',
+      nodoId: nodoId,
+      metodo: MetodoVolteo.manual,
+      timestamp: DateTime.now(),
+    );
   }
 }

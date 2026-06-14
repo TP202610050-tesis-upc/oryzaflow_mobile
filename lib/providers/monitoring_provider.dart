@@ -3,6 +3,7 @@ import '../models/esp32_config_model.dart';
 import '../models/node_model.dart';
 import '../models/sensor_reading_model.dart';
 import '../models/threshold_model.dart';
+import '../models/volteo_model.dart';
 import '../repositories/i_node_repository.dart';
 import '../core/enums/node_status.dart';
 
@@ -16,9 +17,7 @@ class MonitoringProvider extends ChangeNotifier {
   List<SensorReadingModel> _lecturas = [];
   Esp32ConfigModel? _config;
   ThresholdModel? _umbrales;
-  final Map<String, bool> _ventiladores = {};
-  final Map<String, bool> _calefactores = {};
-  final Map<String, bool> _modoManual = {};
+  final Map<String, VolteoModel> _ultimoVolteo = {};
   bool _cargando = false;
   bool _cargandoLecturas = false;
   bool _procesando = false;
@@ -34,9 +33,7 @@ class MonitoringProvider extends ChangeNotifier {
   bool get estaProcesando => _procesando;
   String? get error => _error;
 
-  bool ventiladorActivo(String nodoId) => _ventiladores[nodoId] ?? false;
-  bool calefactorActivo(String nodoId) => _calefactores[nodoId] ?? false;
-  bool esModoManual(String nodoId) => _modoManual[nodoId] ?? false;
+  VolteoModel? ultimoVolteo(String nodoId) => _ultimoVolteo[nodoId];
 
   Future<void> cargarNodos() async {
     _cargando = true;
@@ -129,25 +126,20 @@ class MonitoringProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> toggleVentilador(String nodoId) async {
-    final current = ventiladorActivo(nodoId);
-    await _repositorio.activarVentilador(nodoId, !current);
-    _ventiladores[nodoId] = !current;
+  Future<bool> registrarVolteo(String nodoId) async {
+    _procesando = true;
     notifyListeners();
-  }
-
-  Future<void> toggleCalefactor(String nodoId) async {
-    final current = calefactorActivo(nodoId);
-    await _repositorio.activarCalefactor(nodoId, !current);
-    _calefactores[nodoId] = !current;
-    notifyListeners();
-  }
-
-  Future<void> toggleModoManual(String nodoId) async {
-    final current = esModoManual(nodoId);
-    await _repositorio.setModoManual(nodoId, !current);
-    _modoManual[nodoId] = !current;
-    notifyListeners();
+    try {
+      final volteo = await _repositorio.registrarVolteo(nodoId);
+      _ultimoVolteo[nodoId] = volteo;
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      return false;
+    } finally {
+      _procesando = false;
+      notifyListeners();
+    }
   }
 
   Future<NodeModel> actualizarEstado(String id, NodeStatus estado) async {

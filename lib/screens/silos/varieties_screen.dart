@@ -73,8 +73,8 @@ class _VarietiesView extends StatelessWidget {
                 variedad: prov.variedades[i],
                 puedeEditar: rol?.puedeEditarPerfiles == true,
                 puedeEliminar: rol?.puedeCrearPerfiles == true,
-                onEditar: () => context.push(
-                    '${RouteNames.editarVariedad}?id=${prov.variedades[i].id}'),
+                onEditar: () => context.push(RouteNames.editarVariedad,
+                    extra: prov.variedades[i]),
                 onEliminar: () async {
                   final confirmar = await mostrarDialogoConfirmacion(
                     context: context,

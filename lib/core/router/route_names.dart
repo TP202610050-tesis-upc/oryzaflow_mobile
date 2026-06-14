@@ -28,7 +28,6 @@ class RouteNames {
   // Módulo 5
   static const String monitoreo = '/monitoreo';
   static const String parametros = '/monitoreo/parametros';
-  static const String controlCampo = '/monitoreo/control';
   static const String configEsp32 = '/monitoreo/esp32';
   static const String detalleNodo = '/monitoreo/:nodoId';
   static String detalleNodoPath(String id) => '/monitoreo/$id';

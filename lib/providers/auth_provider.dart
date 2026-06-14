@@ -78,10 +78,15 @@ class AuthProvider extends ChangeNotifier {
   Future<void> cambiarContrasena({
     required String contrasenaActual,
     required String nuevaContrasena,
-  }) =>
-      _repositorio.cambiarContrasena(
-        userId: _usuario!.id,
-        contrasenaActual: contrasenaActual,
-        nuevaContrasena: nuevaContrasena,
-      );
+  }) {
+    final usuario = _usuario;
+    if (usuario == null) {
+      throw Exception('No hay una sesión activa');
+    }
+    return _repositorio.cambiarContrasena(
+      userId: usuario.id,
+      contrasenaActual: contrasenaActual,
+      nuevaContrasena: nuevaContrasena,
+    );
+  }
 }

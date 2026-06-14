@@ -43,8 +43,8 @@ class SiloProvider extends ChangeNotifier {
         _varietyRepo.obtenerVariedades(),
         _profileRepo.obtenerPerfiles(),
       ]);
-      _silos = r[0] as List<SiloModel>;
-      _variedades = r[1] as List<VarietyModel>;
+      _silos = List.of(r[0] as List<SiloModel>);
+      _variedades = List.of(r[1] as List<VarietyModel>);
       _perfiles = r[2] as List<DryingProfileModel>;
     } catch (e) {
       _error = e.toString();
@@ -59,7 +59,7 @@ class SiloProvider extends ChangeNotifier {
     _error = null;
     notifyListeners();
     try {
-      _silos = await _siloRepo.obtenerSilos();
+      _silos = List.of(await _siloRepo.obtenerSilos());
     } catch (e) {
       _error = e.toString();
     } finally {
@@ -73,7 +73,7 @@ class SiloProvider extends ChangeNotifier {
     _error = null;
     notifyListeners();
     try {
-      _variedades = await _varietyRepo.obtenerVariedades();
+      _variedades = List.of(await _varietyRepo.obtenerVariedades());
     } catch (e) {
       _error = e.toString();
     } finally {

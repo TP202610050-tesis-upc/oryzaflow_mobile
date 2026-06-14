@@ -61,5 +61,6 @@ class NodeModel extends Equatable {
 
   @override
   List<Object?> get props =>
-      [id, estado, temperatura, humedad, flujoAire, humedadGrano];
+      [id, estado, temperatura, humedad, flujoAire, humedadGrano,
+        ultimaActualizacion, loteActivoId];
 }

@@ -37,8 +37,8 @@ class HelpFaqScreen extends StatelessWidget {
       'Ve a Silos (desde el menú lateral) y presiona el botón "Nuevo Silo". Completa nombre, ubicación y capacidad. Requiere rol de Administrador.',
     ),
     (
-      '¿Qué es el modo manual en Control de Campo?',
-      'En modo manual puedes encender o apagar directamente los ventiladores y calefactores de cada nodo. En modo automático, el sistema los controla según el perfil de secado activo.',
+      '¿El sistema acciona algo de forma automática?',
+      'No. OryzaFlow es un sistema de monitoreo y alerta informativa: las alertas son recomendaciones y nunca disparan acciones físicas automáticas. El volteo del grano es siempre una acción manual que decide y registra el operario.',
     ),
     (
       '¿Cómo calibro los sensores?',

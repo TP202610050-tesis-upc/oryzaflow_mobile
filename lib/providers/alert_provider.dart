@@ -54,7 +54,13 @@ class AlertProvider extends ChangeNotifier {
   Future<bool> eliminarAlerta(String id) async {
     _alertas.removeWhere((a) => a.id == id);
     notifyListeners();
-    return true;
+    try {
+      await _repositorio.eliminarAlerta(id);
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      return false;
+    }
   }
 
   void restaurarAlerta(AlertModel alerta) {
@@ -66,6 +72,7 @@ class AlertProvider extends ChangeNotifier {
       _alertas.insert(idx, alerta);
     }
     notifyListeners();
+    _repositorio.restaurarAlerta(alerta);
   }
 
   Future<void> marcarTodasLeidas() async {

@@ -118,9 +118,14 @@ class _ExportViewState extends State<_ExportView> {
                           final ok = await prov.exportar(_formato);
                           if (!context.mounted) return;
                           if (ok && prov.rutaExportada != null) {
-                            await Share.shareXFiles(
-                              [XFile(prov.rutaExportada!, mimeType: 'text/csv')],
-                              subject: 'Reporte OryzaFlow',
+                            await SharePlus.instance.share(
+                              ShareParams(
+                                files: [
+                                  XFile(prov.rutaExportada!,
+                                      mimeType: 'text/csv'),
+                                ],
+                                subject: 'Reporte OryzaFlow',
+                              ),
                             );
                           } else {
                             ScaffoldMessenger.of(context)

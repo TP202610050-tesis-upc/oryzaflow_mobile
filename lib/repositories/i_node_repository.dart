@@ -2,6 +2,7 @@ import '../models/node_model.dart';
 import '../models/sensor_reading_model.dart';
 import '../models/esp32_config_model.dart';
 import '../models/threshold_model.dart';
+import '../models/volteo_model.dart';
 import '../core/enums/node_status.dart';
 
 abstract class INodeRepository {
@@ -18,8 +19,6 @@ abstract class INodeRepository {
   Future<ThresholdModel> obtenerUmbrales(String nodoId);
   Future<ThresholdModel> actualizarUmbrales(ThresholdModel umbrales);
 
-  // Control de campo
-  Future<void> activarVentilador(String nodoId, bool activar);
-  Future<void> activarCalefactor(String nodoId, bool activar);
-  Future<void> setModoManual(String nodoId, bool manual);
+  // Volteo manual (acción explícita del operario)
+  Future<VolteoModel> registrarVolteo(String nodoId);
 }

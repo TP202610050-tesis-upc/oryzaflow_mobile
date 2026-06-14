@@ -19,7 +19,7 @@ dependencies:
   connectivity_plus: ^6.0.3
 
   # Seguridad
-  flutter_secure_storage: ^9.2.2
+  flutter_secure_storage: ^10.0.0
   jwt_decoder: ^2.0.1
 
   # Gestión de Estado
@@ -45,7 +45,7 @@ dependencies:
 
   # File system & sharing
   path_provider: ^2.1.4
-  share_plus: ^9.0.0
+  share_plus: ^13.0.0
 
   flutter_localizations:
     sdk: flutter

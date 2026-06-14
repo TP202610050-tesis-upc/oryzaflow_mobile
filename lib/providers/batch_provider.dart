@@ -54,7 +54,7 @@ class BatchProvider extends ChangeNotifier {
     _error = null;
     notifyListeners();
     try {
-      _lotes = await _batchRepo.obtenerLotes();
+      _lotes = List.of(await _batchRepo.obtenerLotes());
     } catch (e) {
       _error = e.toString();
     } finally {

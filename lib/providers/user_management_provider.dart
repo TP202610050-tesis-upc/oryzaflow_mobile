@@ -25,7 +25,7 @@ class UserManagementProvider extends ChangeNotifier {
     _error = null;
     notifyListeners();
     try {
-      _usuarios = await _repositorio.obtenerUsuarios();
+      _usuarios = List.of(await _repositorio.obtenerUsuarios());
     } catch (e) {
       _error = e.toString();
     } finally {

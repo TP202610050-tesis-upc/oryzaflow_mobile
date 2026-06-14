@@ -35,4 +35,16 @@ class MockAlertRepository implements IAlertRepository {
       _alertas[i] = _alertas[i].copyWith(leida: true);
     }
   }
+
+  @override
+  Future<void> eliminarAlerta(String id) async {
+    _alertas.removeWhere((a) => a.id == id);
+  }
+
+  @override
+  Future<void> restaurarAlerta(AlertModel alerta) async {
+    if (_alertas.any((a) => a.id == alerta.id)) return;
+    _alertas.add(alerta);
+    _alertas.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+  }
 }

@@ -23,13 +23,14 @@ class UserDetailScreen extends StatelessWidget {
     return ChangeNotifierProvider(
       create: (_) =>
           sl<UserManagementProvider>()..cargarUsuario(usuarioId),
-      child: const _UserDetailView(),
+      child: _UserDetailView(usuarioId: usuarioId),
     );
   }
 }
 
 class _UserDetailView extends StatelessWidget {
-  const _UserDetailView();
+  final String usuarioId;
+  const _UserDetailView({required this.usuarioId});
 
   @override
   Widget build(BuildContext context) {
@@ -48,7 +49,9 @@ class _UserDetailView extends StatelessWidget {
           return Scaffold(
             appBar: const OryzaFlowAppBar(
                 titulo: AppStrings.detalleUsuario, mostrarBotonAtras: true),
-            body: ErrorStateWidget(mensaje: prov.error, onReintentar: () {}),
+            body: ErrorStateWidget(
+                mensaje: prov.error,
+                onReintentar: () => prov.cargarUsuario(usuarioId)),
           );
         }
         final user = prov.usuarioSeleccionado;
@@ -117,13 +120,19 @@ class _UserDetailFormState extends State<_UserDetailForm> {
   Future<void> _guardar() async {
     final prov = widget.prov;
     final user = widget.user;
-    if (_rolLocal != user.rol) await prov.cambiarRol(user.id, _rolLocal);
-    if (_activoLocal != user.activo) await prov.cambiarEstado(user.id, _activoLocal);
+    var ok = true;
+    if (_rolLocal != user.rol) ok = await prov.cambiarRol(user.id, _rolLocal);
+    if (ok && _activoLocal != user.activo) {
+      ok = await prov.cambiarEstado(user.id, _activoLocal);
+    }
     if (!mounted) return;
+    final cs = Theme.of(context).colorScheme;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: const Text('Cambios guardados'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
+        content: Text(ok
+            ? 'Cambios guardados'
+            : (prov.error ?? 'No se pudieron guardar los cambios')),
+        backgroundColor: ok ? cs.primary : cs.error,
       ),
     );
   }

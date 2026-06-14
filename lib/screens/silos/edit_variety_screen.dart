@@ -8,8 +8,8 @@ import '../../providers/silo_provider.dart';
 import '../../widgets/common/oryzaflow_app_bar.dart';
 
 class EditVarietyScreen extends StatefulWidget {
-  final String? variedadId;
-  const EditVarietyScreen({super.key, this.variedadId});
+  final VarietyModel? variedad;
+  const EditVarietyScreen({super.key, this.variedad});
 
   @override
   State<EditVarietyScreen> createState() => _EditVarietyScreenState();
@@ -23,41 +23,20 @@ class _EditVarietyScreenState extends State<EditVarietyScreen> {
   late final TextEditingController _tempMaxCtrl;
   bool _activo = true;
   late SiloProvider _provider;
-  VarietyModel? _original;
-  bool _inicializado = false;
 
-  bool get _esNuevo => widget.variedadId == null;
+  bool get _esNuevo => widget.variedad == null;
 
   @override
   void initState() {
     super.initState();
-    _nombreCtrl = TextEditingController();
-    _descCtrl = TextEditingController();
-    _humedadObjetivoCtrl = TextEditingController();
-    _tempMaxCtrl = TextEditingController();
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (!_inicializado) {
-      _provider = context.read<SiloProvider>();
-      if (!_esNuevo) {
-        _original = _provider.variedades
-            .where((v) => v.id == widget.variedadId)
-            .firstOrNull;
-        if (_original != null) _llenarFormulario(_original!);
-      }
-      _inicializado = true;
-    }
-  }
-
-  void _llenarFormulario(VarietyModel v) {
-    _nombreCtrl.text = v.nombre;
-    _descCtrl.text = v.descripcion;
-    _humedadObjetivoCtrl.text = v.humedadObjetivo.toString();
-    _tempMaxCtrl.text = v.temperaturaMaxima.toString();
-    _activo = v.activo;
+    final v = widget.variedad;
+    _nombreCtrl = TextEditingController(text: v?.nombre ?? '');
+    _descCtrl = TextEditingController(text: v?.descripcion ?? '');
+    _humedadObjetivoCtrl = TextEditingController(
+        text: v != null ? v.humedadObjetivo.toString() : '');
+    _tempMaxCtrl = TextEditingController(
+        text: v != null ? v.temperaturaMaxima.toString() : '');
+    if (v != null) _activo = v.activo;
   }
 
   @override
@@ -73,7 +52,7 @@ class _EditVarietyScreenState extends State<EditVarietyScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     final variedad = VarietyModel(
-      id: _original?.id ?? '',
+      id: widget.variedad?.id ?? '',
       nombre: _nombreCtrl.text.trim(),
       descripcion: _descCtrl.text.trim(),
       humedadObjetivo: double.parse(_humedadObjetivoCtrl.text),
@@ -84,8 +63,7 @@ class _EditVarietyScreenState extends State<EditVarietyScreen> {
       activo: _activo,
     );
 
-    final ok =
-        await _provider.guardarVariedad(variedad, esNueva: _esNuevo);
+    final ok = await _provider.guardarVariedad(variedad, esNueva: _esNuevo);
 
     if (!mounted) return;
     if (ok) {
@@ -104,8 +82,8 @@ class _EditVarietyScreenState extends State<EditVarietyScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider.value(
-      value: sl<SiloProvider>(),
+    return ChangeNotifierProvider(
+      create: (_) => sl<SiloProvider>(),
       child: Consumer<SiloProvider>(
         builder: (_, prov, __) {
           _provider = prov;

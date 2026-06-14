@@ -29,13 +29,14 @@ class BatchDetailScreen extends StatelessWidget {
         p.cargarLecturas(loteId);
         return p;
       },
-      child: const _BatchDetailView(),
+      child: _BatchDetailView(loteId: loteId),
     );
   }
 }
 
 class _BatchDetailView extends StatelessWidget {
-  const _BatchDetailView();
+  final String loteId;
+  const _BatchDetailView({required this.loteId});
 
   @override
   Widget build(BuildContext context) {
@@ -53,7 +54,11 @@ class _BatchDetailView extends StatelessWidget {
             appBar: const OryzaFlowAppBar(
                 titulo: AppStrings.detalleLote, mostrarBotonAtras: true),
             body: ErrorStateWidget(
-                mensaje: prov.error, onReintentar: () {}),
+                mensaje: prov.error,
+                onReintentar: () {
+                  prov.cargarLote(loteId);
+                  prov.cargarLecturas(loteId);
+                }),
           );
         }
         final lote = prov.loteSeleccionado;

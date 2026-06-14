@@ -67,7 +67,14 @@ class _NewBatchFormState extends State<_NewBatchForm> {
       return;
     }
 
-    final usuario = context.read<AuthProvider>().usuario!;
+    final usuario = context.read<AuthProvider>().usuario;
+    if (usuario == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Sesión expirada. Vuelve a iniciar sesión.'),
+        backgroundColor: AppColors.critico,
+      ));
+      return;
+    }
     final lote = BatchModel(
       id: '',
       codigo: _codigoCtrl.text.trim(),

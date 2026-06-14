@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../core/enums/user_role.dart';
 import '../../models/silo_model.dart';
 import '../../models/user_model.dart';
+import '../../models/variety_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../screens/auth/edit_profile_screen.dart';
 import '../../screens/auth/login_screen.dart';
@@ -15,7 +16,6 @@ import '../../screens/batches/new_batch_screen.dart';
 import '../../screens/dashboard/alerts_screen.dart';
 import '../../screens/dashboard/dashboard_screen.dart';
 import '../../screens/monitoring/esp32_config_screen.dart';
-import '../../screens/monitoring/field_control_screen.dart';
 import '../../screens/monitoring/monitoring_screen.dart';
 import '../../screens/monitoring/parameters_screen.dart';
 import '../../screens/reports/drying_charts_screen.dart';
@@ -78,7 +78,7 @@ class AppRouter {
                   path: 'variedades',
                   builder: (_, __) => const VarietiesScreen(),
                   routes: [
-                    GoRoute(path: 'editar', builder: (_, state) => EditVarietyScreen(variedadId: state.uri.queryParameters['id'])),
+                    GoRoute(path: 'editar', builder: (_, state) => EditVarietyScreen(variedad: state.extra as VarietyModel?)),
                   ],
                 ),
                 GoRoute(path: 'disponibilidad', builder: (_, __) => const AvailabilityScreen()),
@@ -99,7 +99,6 @@ class AppRouter {
               builder: (_, __) => const MonitoringScreen(),
               routes: [
                 GoRoute(path: 'parametros', builder: (_, __) => const ParametersScreen()),
-                GoRoute(path: 'control', builder: (_, __) => const FieldControlScreen()),
                 GoRoute(path: 'esp32', builder: (_, state) => Esp32ConfigScreen(nodoId: state.uri.queryParameters['nodo'])),
               ],
             ),
