@@ -1,4 +1,6 @@
 import 'package:get_it/get_it.dart';
+import '../network/api_client.dart';
+import '../network/token_storage.dart';
 import '../../providers/alert_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/batch_provider.dart';
@@ -12,6 +14,7 @@ import '../../providers/user_management_provider.dart';
 import '../../repositories/i_alert_repository.dart';
 import '../../repositories/i_auth_repository.dart';
 import '../../repositories/i_batch_repository.dart';
+import '../../repositories/i_dashboard_repository.dart';
 import '../../repositories/i_drying_profile_repository.dart';
 import '../../repositories/i_node_repository.dart';
 import '../../repositories/i_report_repository.dart';
@@ -19,9 +22,6 @@ import '../../repositories/i_settings_repository.dart';
 import '../../repositories/i_silo_repository.dart';
 import '../../repositories/i_user_repository.dart';
 import '../../repositories/i_variety_repository.dart';
-import '../../repositories/mock/mock_alert_repository.dart';
-import '../../repositories/mock/mock_auth_repository.dart';
-import '../../repositories/mock/mock_batch_repository.dart';
 import '../../repositories/mock/mock_drying_profile_repository.dart';
 import '../../repositories/mock/mock_node_repository.dart';
 import '../../repositories/mock/mock_report_repository.dart';
@@ -29,16 +29,32 @@ import '../../repositories/mock/mock_settings_repository.dart';
 import '../../repositories/mock/mock_silo_repository.dart';
 import '../../repositories/mock/mock_user_repository.dart';
 import '../../repositories/mock/mock_variety_repository.dart';
+import '../../repositories/api/real_auth_repository.dart';
+import '../../repositories/api/real_alert_repository.dart';
+import '../../repositories/api/real_batch_repository.dart';
+import '../../repositories/api/real_dashboard_repository.dart';
 
 final GetIt sl = GetIt.instance;
 
 Future<void> configurarDependencias() async {
-  // ── Repositories (LazySingleton — mock state is shared across providers) ──
-  sl.registerLazySingleton<IAuthRepository>(() => MockAuthRepository());
-  sl.registerLazySingleton<IAlertRepository>(() => MockAlertRepository());
+  // ── Infraestructura de red ──
+  sl.registerLazySingleton<TokenStorage>(() => TokenStorage());
+  sl.registerLazySingleton<ApiClient>(() => ApiClient(sl<TokenStorage>()));
+
+  // ── Repositories ──
+  // REALES (Fase 1 — slice): auth, dashboard, alertas, lotes.
+  sl.registerLazySingleton<IAuthRepository>(
+      () => RealAuthRepository(sl<ApiClient>(), sl<TokenStorage>()));
+  sl.registerLazySingleton<IDashboardRepository>(
+      () => RealDashboardRepository(sl<ApiClient>()));
+  sl.registerLazySingleton<IAlertRepository>(
+      () => RealAlertRepository(sl<ApiClient>()));
+  sl.registerLazySingleton<IBatchRepository>(
+      () => RealBatchRepository(sl<ApiClient>()));
+
+  // MOCK (Fase 2 — pendientes de cablear): silos, variedades, nodos, perfiles, reportes, usuarios, settings.
   sl.registerLazySingleton<ISiloRepository>(() => MockSiloRepository());
   sl.registerLazySingleton<IVarietyRepository>(() => MockVarietyRepository());
-  sl.registerLazySingleton<IBatchRepository>(() => MockBatchRepository());
   sl.registerLazySingleton<INodeRepository>(() => MockNodeRepository());
   sl.registerLazySingleton<IDryingProfileRepository>(
       () => MockDryingProfileRepository());
@@ -55,6 +71,7 @@ Future<void> configurarDependencias() async {
 
   // All others are Factory — created fresh per screen, disposed on pop
   sl.registerFactory<DashboardProvider>(() => DashboardProvider(
+        sl<IDashboardRepository>(),
         sl<INodeRepository>(),
         sl<IBatchRepository>(),
         sl<IAlertRepository>(),

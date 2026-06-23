@@ -5,6 +5,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 import 'core/constants/app_strings.dart';
 import 'core/di/injection_container.dart';
+import 'core/network/api_client.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'providers/alert_provider.dart';
@@ -23,6 +24,8 @@ Future<void> main() async {
     systemNavigationBarIconBrightness: Brightness.dark,
   ));
   await configurarDependencias();
+  // Ante un 401, el ApiClient resetea la sesión para que el router lleve a login.
+  sl<ApiClient>().onUnauthorized = () => sl<AuthProvider>().sesionExpirada();
   await initializeDateFormatting('es', null);
   runApp(const OryzaFlowApp());
 }

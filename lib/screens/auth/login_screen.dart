@@ -186,9 +186,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Widget _buildDemoCredentials() {
     const creds = [
-      ('Operador', 'operador@oryzaflow.com', 'demo123'),
-      ('Supervisor', 'supervisor@oryzaflow.com', 'demo123'),
-      ('Administrador', 'admin@oryzaflow.com', 'demo123'),
+      ('Administrador', 'admin@oryzaflow.pe', 'admin123'),
     ];
 
     return Theme(

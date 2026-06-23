@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import '../core/enums/alert_severity.dart';
+import '../core/network/json_mappers.dart';
 
 class AlertModel extends Equatable {
   final String id;
@@ -21,6 +22,17 @@ class AlertModel extends Equatable {
     required this.leida,
     this.loteId,
   });
+
+  factory AlertModel.fromJson(Map<String, dynamic> json) => AlertModel(
+        id: json['id'].toString(),
+        nodoId: json['nodoId'].toString(),
+        nodoNombre: json['nodoNombre'] as String? ?? '',
+        mensaje: json['mensaje'] as String? ?? '',
+        severidad: AlertSeverity.values.byName(json['severidad'] as String),
+        timestamp: parseFecha(json['timestamp']),
+        leida: json['leida'] as bool? ?? false,
+        loteId: json['loteId'] as String?,
+      );
 
   AlertModel copyWith({bool? leida}) => AlertModel(
         id: id,

@@ -60,6 +60,15 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Llamado por el ApiClient ante un 401 (token vencido/revocado): resetea la sesión
+  /// localmente sin golpear al backend, para que el guard del router lleve a login.
+  void sesionExpirada() {
+    if (_estado == AuthEstado.noAutenticado && _usuario == null) return;
+    _usuario = null;
+    _estado = AuthEstado.noAutenticado;
+    notifyListeners();
+  }
+
   Future<void> solicitarRecuperacion(String email) =>
       _repositorio.solicitarRecuperacionContrasena(email);
 

@@ -6,7 +6,6 @@ import '../../core/constants/app_dimensions.dart';
 import '../../core/constants/app_strings.dart';
 import '../../core/di/injection_container.dart';
 import '../../core/enums/batch_status.dart';
-import '../../core/enums/drying_stage.dart';
 import '../../core/router/route_names.dart';
 import '../../core/utils/date_formatter.dart';
 import '../../core/utils/sensor_utils.dart';
@@ -216,19 +215,6 @@ class _BatchCard extends StatelessWidget {
                   ),
                 ],
               ),
-              if (lote.etapaActual != null) ...[
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    const Icon(Icons.play_circle_outline,
-                        size: 14, color: AppColors.informacion),
-                    const SizedBox(width: 4),
-                    Text(lote.etapaActual!.displayName,
-                        style: const TextStyle(
-                            fontSize: 11, color: AppColors.informacion)),
-                  ],
-                ),
-              ],
             ],
           ),
         ),

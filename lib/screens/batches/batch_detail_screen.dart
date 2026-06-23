@@ -5,7 +5,6 @@ import '../../core/constants/app_dimensions.dart';
 import '../../core/constants/app_strings.dart';
 import '../../core/di/injection_container.dart';
 import '../../core/enums/batch_status.dart';
-import '../../core/enums/drying_stage.dart';
 import '../../core/utils/date_formatter.dart';
 import '../../core/utils/sensor_utils.dart';
 import '../../models/batch_model.dart';
@@ -143,10 +142,6 @@ class _StatusBanner extends StatelessWidget {
                         fontWeight: FontWeight.w700,
                         fontSize: 16,
                         color: color)),
-                if (lote.etapaActual != null)
-                  Text(lote.etapaActual!.displayName,
-                      style: const TextStyle(
-                          fontSize: 13, color: AppColors.informacion)),
               ],
             ),
           ),

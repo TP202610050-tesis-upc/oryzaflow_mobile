@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../models/alert_model.dart';
 import '../repositories/i_alert_repository.dart';
@@ -11,6 +12,10 @@ class AlertProvider extends ChangeNotifier {
   bool _cargando = false;
   bool _procesando = false;
   String? _error;
+
+  // §7.4: el DELETE se difiere; si el usuario deshace antes, se cancela.
+  static const _ventanaUndo = Duration(seconds: 5);
+  final Map<String, Timer> _eliminacionesPendientes = {};
 
   List<AlertModel> get alertas => _alertas;
   List<AlertModel> get noLeidas => _alertas.where((a) => !a.leida).toList();
@@ -51,28 +56,36 @@ class AlertProvider extends ChangeNotifier {
     }
   }
 
+  /// Quita la alerta de la lista al instante y programa el descarte real tras la ventana de
+  /// "Deshacer"; si el usuario deshace antes, [restaurarAlerta] cancela el envío.
   Future<bool> eliminarAlerta(String id) async {
-    _alertas.removeWhere((a) => a.id == id);
+    final idx = _alertas.indexWhere((a) => a.id == id);
+    if (idx == -1) return false;
+    _alertas.removeAt(idx);
     notifyListeners();
-    try {
-      await _repositorio.eliminarAlerta(id);
-      return true;
-    } catch (e) {
-      _error = e.toString();
-      return false;
-    }
+
+    _eliminacionesPendientes[id]?.cancel();
+    _eliminacionesPendientes[id] = Timer(_ventanaUndo, () async {
+      _eliminacionesPendientes.remove(id);
+      try {
+        await _repositorio.eliminarAlerta(id);
+      } catch (e) {
+        _error = e.toString();
+      }
+    });
+    return true;
   }
 
   void restaurarAlerta(AlertModel alerta) {
-    final idx = _alertas.indexWhere(
-        (a) => a.timestamp.isBefore(alerta.timestamp));
+    _eliminacionesPendientes.remove(alerta.id)?.cancel();
+    final idx =
+        _alertas.indexWhere((a) => a.timestamp.isBefore(alerta.timestamp));
     if (idx == -1) {
       _alertas.add(alerta);
     } else {
       _alertas.insert(idx, alerta);
     }
     notifyListeners();
-    _repositorio.restaurarAlerta(alerta);
   }
 
   Future<void> marcarTodasLeidas() async {
@@ -87,5 +100,14 @@ class AlertProvider extends ChangeNotifier {
       _procesando = false;
       notifyListeners();
     }
+  }
+
+  @override
+  void dispose() {
+    for (final t in _eliminacionesPendientes.values) {
+      t.cancel();
+    }
+    _eliminacionesPendientes.clear();
+    super.dispose();
   }
 }

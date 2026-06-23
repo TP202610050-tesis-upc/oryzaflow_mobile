@@ -1,7 +1,6 @@
 import 'dart:math';
 import '../../core/enums/alert_severity.dart';
 import '../../core/enums/batch_status.dart';
-import '../../core/enums/drying_stage.dart';
 import '../../core/enums/node_status.dart';
 import '../../core/enums/user_role.dart';
 import '../../models/alert_model.dart';
@@ -233,7 +232,6 @@ class MockData {
       nodoId: 'nodo-a',
       nodoNombre: 'Nodo A',
       estado: BatchStatus.enProceso,
-      etapaActual: DryingStage.secado,
       pesoKg: 38500,
       humedadInicial: 24.5,
       fechaIngreso: _now.subtract(const Duration(hours: 10)),
@@ -253,7 +251,6 @@ class MockData {
       nodoId: 'nodo-b',
       nodoNombre: 'Nodo B',
       estado: BatchStatus.enProceso,
-      etapaActual: DryingStage.enfriamiento,
       pesoKg: 25000,
       humedadInicial: 26.0,
       fechaIngreso: _now.subtract(const Duration(hours: 8)),
@@ -273,7 +270,6 @@ class MockData {
       nodoId: 'nodo-a',
       nodoNombre: 'Nodo A',
       estado: BatchStatus.completado,
-      etapaActual: DryingStage.completado,
       pesoKg: 42000,
       humedadInicial: 22.1,
       humedadFinal: 13.6,
@@ -295,7 +291,6 @@ class MockData {
       nodoId: 'nodo-b',
       nodoNombre: 'Nodo B',
       estado: BatchStatus.completado,
-      etapaActual: DryingStage.completado,
       pesoKg: 35000,
       humedadInicial: 25.8,
       humedadFinal: 14.1,
@@ -317,7 +312,6 @@ class MockData {
       nodoId: 'nodo-c',
       nodoNombre: 'Nodo C',
       estado: BatchStatus.cancelado,
-      etapaActual: DryingStage.detenido,
       pesoKg: 18000,
       humedadInicial: 27.0,
       fechaIngreso: _now.subtract(const Duration(days: 6)),
@@ -401,15 +395,12 @@ class MockData {
           (50.0 + 5.0 * sin(t * 0.3 + seed * 0.01) + 2.0 * sin(t * 1.7)).clamp(35.0, 65.0);
       final humedad =
           (40.0 - t * 0.3 + 5.0 * sin(t * 0.5 + seed * 0.02)).clamp(12.0, 80.0);
-      final flujo =
-          (80.0 + 8.0 * sin(t * 0.2 + seed * 0.015)).clamp(0.0, 100.0);
       final hg =
           (22.0 - t * 0.15 + sin(t * 0.8) * 0.5).clamp(10.0, 25.0);
       result.add(SensorReadingModel(
         timestamp: current,
         temperatura: temp,
         humedad: humedad,
-        flujoAire: flujo,
         humedadGrano: hg,
       ));
       current = current.add(intervalo);

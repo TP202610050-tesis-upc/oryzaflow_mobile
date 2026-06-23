@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
 import '../core/enums/batch_status.dart';
-import '../core/enums/drying_stage.dart';
+import '../core/network/json_mappers.dart';
 
 class BatchModel extends Equatable {
   final String id;
@@ -14,7 +14,6 @@ class BatchModel extends Equatable {
   final String nodoId;
   final String nodoNombre;
   final BatchStatus estado;
-  final DryingStage? etapaActual;
   final double pesoKg;
   final double humedadInicial;
   final double? humedadFinal;
@@ -41,7 +40,6 @@ class BatchModel extends Equatable {
     required this.fechaIngreso,
     required this.operadorId,
     required this.operadorNombre,
-    this.etapaActual,
     this.humedadFinal,
     this.fechaInicio,
     this.fechaFin,
@@ -53,9 +51,40 @@ class BatchModel extends Equatable {
           ? fechaFin!.difference(fechaInicio!)
           : null;
 
+  factory BatchModel.fromJson(Map<String, dynamic> json) => BatchModel(
+        id: json['id'].toString(),
+        codigo: json['codigo'] as String? ?? '',
+        siloId: json['siloId'].toString(),
+        siloNombre: json['siloNombre'] as String? ?? '',
+        variedadId: json['variedadId'].toString(),
+        variedadNombre: json['variedadNombre'] as String? ?? '',
+        perfilSecadoId: json['perfilSecadoId'].toString(),
+        perfilSecadoNombre: json['perfilSecadoNombre'] as String? ?? '',
+        nodoId: json['nodoId'].toString(),
+        nodoNombre: json['nodoNombre'] as String? ?? '',
+        estado: batchStatusFromApi(json['estado'] as String),
+        pesoKg: parseDouble(json['pesoKg']),
+        humedadInicial: parseDouble(json['humedadInicial']),
+        humedadFinal: parseDoubleNullable(json['humedadFinal']),
+        fechaIngreso: parseFecha(json['fechaIngreso']),
+        fechaInicio: parseFechaNullable(json['fechaInicio']),
+        fechaFin: parseFechaNullable(json['fechaFin']),
+        operadorId: json['operadorId'].toString(),
+        operadorNombre: json['operadorNombre'] as String? ?? '',
+      );
+
+  /// Payload de creación (CreateBatchResource). El operador lo toma el backend del token.
+  Map<String, dynamic> toCreateJson() => {
+        'siloId': int.tryParse(siloId),
+        'variedadId': int.tryParse(variedadId),
+        'perfilSecadoId': int.tryParse(perfilSecadoId),
+        'nodoId': int.tryParse(nodoId),
+        'pesoKg': pesoKg,
+        'humedadInicial': humedadInicial,
+      };
+
   BatchModel copyWith({
     BatchStatus? estado,
-    DryingStage? etapaActual,
     double? humedadFinal,
     DateTime? fechaInicio,
     DateTime? fechaFin,
@@ -72,7 +101,6 @@ class BatchModel extends Equatable {
         nodoId: nodoId,
         nodoNombre: nodoNombre,
         estado: estado ?? this.estado,
-        etapaActual: etapaActual ?? this.etapaActual,
         pesoKg: pesoKg,
         humedadInicial: humedadInicial,
         humedadFinal: humedadFinal ?? this.humedadFinal,
@@ -84,5 +112,5 @@ class BatchModel extends Equatable {
       );
 
   @override
-  List<Object?> get props => [id, estado, etapaActual, humedadFinal];
+  List<Object?> get props => [id, estado, humedadFinal];
 }

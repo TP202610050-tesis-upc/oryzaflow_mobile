@@ -6,13 +6,12 @@ import '../../core/utils/date_formatter.dart';
 import '../../models/sensor_reading_model.dart';
 import 'loading_shimmer.dart';
 
-enum SensorTipo { temperatura, humedad, flujoAire, humedadGrano }
+enum SensorTipo { temperatura, humedad, humedadGrano }
 
 extension SensorTipoExtension on SensorTipo {
   String get titulo => switch (this) {
         SensorTipo.temperatura => 'Temperatura',
         SensorTipo.humedad => 'Humedad Ambiental',
-        SensorTipo.flujoAire => 'Flujo de Aire',
         SensorTipo.humedadGrano => 'Humedad del Grano',
       };
 
@@ -24,21 +23,18 @@ extension SensorTipoExtension on SensorTipo {
   Color get color => switch (this) {
         SensorTipo.temperatura => AppColors.chartTemperatura,
         SensorTipo.humedad => AppColors.chartHumedad,
-        SensorTipo.flujoAire => AppColors.chartFlujoAire,
         SensorTipo.humedadGrano => AppColors.chartHumedadGrano,
       };
 
   IconData get icono => switch (this) {
         SensorTipo.temperatura => Icons.thermostat_rounded,
         SensorTipo.humedad => Icons.water_drop_outlined,
-        SensorTipo.flujoAire => Icons.air_rounded,
         SensorTipo.humedadGrano => Icons.grass_rounded,
       };
 
   double Function(SensorReadingModel) get extractor => switch (this) {
         SensorTipo.temperatura => (r) => r.temperatura,
         SensorTipo.humedad => (r) => r.humedad,
-        SensorTipo.flujoAire => (r) => r.flujoAire,
         SensorTipo.humedadGrano => (r) => r.humedadGrano,
       };
 }

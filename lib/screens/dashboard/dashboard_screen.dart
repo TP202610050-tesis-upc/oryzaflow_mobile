@@ -6,7 +6,7 @@ import '../../core/constants/app_dimensions.dart';
 import '../../core/constants/app_strings.dart';
 import '../../core/di/injection_container.dart';
 import '../../core/router/route_names.dart';
-import '../../core/enums/drying_stage.dart';
+import '../../core/enums/batch_status.dart';
 import '../../core/utils/date_formatter.dart';
 import '../../core/utils/sensor_utils.dart';
 import '../../models/alert_model.dart';
@@ -286,7 +286,7 @@ class _LoteTile extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            Text(lote.etapaActual?.displayName ?? '',
+            Text(lote.estado.displayName,
                 style: const TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w500,
