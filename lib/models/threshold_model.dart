@@ -1,13 +1,13 @@
 import 'package:equatable/equatable.dart';
 
+/// Umbrales por nodo (HU-21/22). El backend aún NO expone este recurso (#43-44 pendientes);
+/// hoy se sirve como stub local con valores por defecto. Ver RealNodeRepository.
 class ThresholdModel extends Equatable {
   final String nodoId;
   final double temperaturaMin;
   final double temperaturaMax;
   final double humedadMin;
   final double humedadMax;
-  final double flujoAireMin;
-  final double flujoAireMax;
   final double humedadGranoMin;
   final double humedadGranoMax;
 
@@ -17,8 +17,6 @@ class ThresholdModel extends Equatable {
     required this.temperaturaMax,
     required this.humedadMin,
     required this.humedadMax,
-    required this.flujoAireMin,
-    required this.flujoAireMax,
     required this.humedadGranoMin,
     required this.humedadGranoMax,
   });
@@ -28,8 +26,6 @@ class ThresholdModel extends Equatable {
     double? temperaturaMax,
     double? humedadMin,
     double? humedadMax,
-    double? flujoAireMin,
-    double? flujoAireMax,
     double? humedadGranoMin,
     double? humedadGranoMax,
   }) =>
@@ -39,8 +35,6 @@ class ThresholdModel extends Equatable {
         temperaturaMax: temperaturaMax ?? this.temperaturaMax,
         humedadMin: humedadMin ?? this.humedadMin,
         humedadMax: humedadMax ?? this.humedadMax,
-        flujoAireMin: flujoAireMin ?? this.flujoAireMin,
-        flujoAireMax: flujoAireMax ?? this.flujoAireMax,
         humedadGranoMin: humedadGranoMin ?? this.humedadGranoMin,
         humedadGranoMax: humedadGranoMax ?? this.humedadGranoMax,
       );

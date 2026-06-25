@@ -181,6 +181,7 @@ class _SiloTag extends StatelessWidget {
         SiloStatus.disponible => AppColors.verde,
         SiloStatus.ocupado => AppColors.advertencia,
         SiloStatus.mantenimiento => AppColors.textoSecundario,
+        SiloStatus.deBaja => AppColors.textoSecundario,
       };
 
   @override

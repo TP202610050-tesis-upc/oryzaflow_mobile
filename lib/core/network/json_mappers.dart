@@ -1,5 +1,7 @@
 import '../enums/batch_status.dart';
+import '../enums/node_status.dart';
 import '../enums/user_role.dart';
+import '../../models/silo_model.dart';
 
 /// Helpers de (de)serialización compartidos por los `fromJson/toJson` reales.
 /// El backend usa ISO-8601 para fechas y UPPER_SNAKE para los enums.
@@ -32,7 +34,7 @@ String batchStatusToApi(BatchStatus s) => switch (s) {
       BatchStatus.cancelado => 'CANCELADO',
     };
 
-// ── UserRole ← backend (lista de roles tipo ROLE_ADMIN) ──
+// ── UserRole ↔ backend (lista de roles tipo ROLE_ADMIN) ──
 UserRole userRoleFromApi(List<dynamic>? roles) {
   final first = (roles == null || roles.isEmpty)
       ? ''
@@ -43,3 +45,41 @@ UserRole userRoleFromApi(List<dynamic>? roles) {
     _ => UserRole.operador,
   };
 }
+
+String userRoleToApi(UserRole rol) => switch (rol) {
+      UserRole.admin => 'ROLE_ADMIN',
+      UserRole.supervisor => 'ROLE_SUPERVISOR',
+      UserRole.operador => 'ROLE_OPERADOR',
+    };
+
+// ── SiloStatus ↔ backend (DISPONIBLE/OCUPADO/MANTENIMIENTO/DE_BAJA) ──
+SiloStatus siloStatusFromApi(String s) => switch (s) {
+      'DISPONIBLE' => SiloStatus.disponible,
+      'OCUPADO' => SiloStatus.ocupado,
+      'MANTENIMIENTO' => SiloStatus.mantenimiento,
+      'DE_BAJA' => SiloStatus.deBaja,
+      _ => SiloStatus.disponible,
+    };
+
+String siloStatusToApi(SiloStatus s) => switch (s) {
+      SiloStatus.disponible => 'DISPONIBLE',
+      SiloStatus.ocupado => 'OCUPADO',
+      SiloStatus.mantenimiento => 'MANTENIMIENTO',
+      SiloStatus.deBaja => 'DE_BAJA',
+    };
+
+// ── NodeStatus ↔ backend (ACTIVO/INACTIVO/ALERTA/DESCONECTADO) ──
+NodeStatus nodeStatusFromApi(String s) => switch (s) {
+      'ACTIVO' => NodeStatus.activo,
+      'INACTIVO' => NodeStatus.inactivo,
+      'ALERTA' => NodeStatus.alerta,
+      'DESCONECTADO' => NodeStatus.desconectado,
+      _ => NodeStatus.desconectado,
+    };
+
+String nodeStatusToApi(NodeStatus s) => switch (s) {
+      NodeStatus.activo => 'ACTIVO',
+      NodeStatus.inactivo => 'INACTIVO',
+      NodeStatus.alerta => 'ALERTA',
+      NodeStatus.desconectado => 'DESCONECTADO',
+    };

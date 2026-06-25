@@ -22,17 +22,17 @@ import '../../repositories/i_settings_repository.dart';
 import '../../repositories/i_silo_repository.dart';
 import '../../repositories/i_user_repository.dart';
 import '../../repositories/i_variety_repository.dart';
-import '../../repositories/mock/mock_drying_profile_repository.dart';
-import '../../repositories/mock/mock_node_repository.dart';
-import '../../repositories/mock/mock_report_repository.dart';
 import '../../repositories/mock/mock_settings_repository.dart';
-import '../../repositories/mock/mock_silo_repository.dart';
-import '../../repositories/mock/mock_user_repository.dart';
-import '../../repositories/mock/mock_variety_repository.dart';
 import '../../repositories/api/real_auth_repository.dart';
 import '../../repositories/api/real_alert_repository.dart';
 import '../../repositories/api/real_batch_repository.dart';
 import '../../repositories/api/real_dashboard_repository.dart';
+import '../../repositories/api/real_silo_repository.dart';
+import '../../repositories/api/real_variety_repository.dart';
+import '../../repositories/api/real_drying_profile_repository.dart';
+import '../../repositories/api/real_node_repository.dart';
+import '../../repositories/api/real_user_repository.dart';
+import '../../repositories/api/real_report_repository.dart';
 
 final GetIt sl = GetIt.instance;
 
@@ -41,8 +41,7 @@ Future<void> configurarDependencias() async {
   sl.registerLazySingleton<TokenStorage>(() => TokenStorage());
   sl.registerLazySingleton<ApiClient>(() => ApiClient(sl<TokenStorage>()));
 
-  // ── Repositories ──
-  // REALES (Fase 1 — slice): auth, dashboard, alertas, lotes.
+  // ── Repositories (todos REALES salvo settings, que son preferencias locales) ──
   sl.registerLazySingleton<IAuthRepository>(
       () => RealAuthRepository(sl<ApiClient>(), sl<TokenStorage>()));
   sl.registerLazySingleton<IDashboardRepository>(
@@ -51,15 +50,20 @@ Future<void> configurarDependencias() async {
       () => RealAlertRepository(sl<ApiClient>()));
   sl.registerLazySingleton<IBatchRepository>(
       () => RealBatchRepository(sl<ApiClient>()));
-
-  // MOCK (Fase 2 — pendientes de cablear): silos, variedades, nodos, perfiles, reportes, usuarios, settings.
-  sl.registerLazySingleton<ISiloRepository>(() => MockSiloRepository());
-  sl.registerLazySingleton<IVarietyRepository>(() => MockVarietyRepository());
-  sl.registerLazySingleton<INodeRepository>(() => MockNodeRepository());
+  sl.registerLazySingleton<ISiloRepository>(
+      () => RealSiloRepository(sl<ApiClient>()));
+  sl.registerLazySingleton<IVarietyRepository>(
+      () => RealVarietyRepository(sl<ApiClient>()));
+  sl.registerLazySingleton<INodeRepository>(
+      () => RealNodeRepository(sl<ApiClient>()));
   sl.registerLazySingleton<IDryingProfileRepository>(
-      () => MockDryingProfileRepository());
-  sl.registerLazySingleton<IReportRepository>(() => MockReportRepository());
-  sl.registerLazySingleton<IUserRepository>(() => MockUserRepository());
+      () => RealDryingProfileRepository(sl<ApiClient>()));
+  sl.registerLazySingleton<IReportRepository>(
+      () => RealReportRepository(sl<ApiClient>()));
+  sl.registerLazySingleton<IUserRepository>(
+      () => RealUserRepository(sl<ApiClient>()));
+
+  // Settings = preferencias de app (tema/idioma/notif), sin backend → local/mock.
   sl.registerLazySingleton<ISettingsRepository>(
       () => MockSettingsRepository());
 

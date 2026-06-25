@@ -29,7 +29,10 @@ class _ExportView extends StatefulWidget {
 }
 
 class _ExportViewState extends State<_ExportView> {
-  String _formato = 'PDF';
+  // El backend genera el reporte en Excel (.xlsx); es el único formato (§7.5).
+  static const _formato = 'xlsx';
+  static const _xlsxMime =
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
   @override
   Widget build(BuildContext context) {
@@ -48,7 +51,7 @@ class _ExportViewState extends State<_ExportView> {
                   size: 56, color: AppColors.verde),
               const SizedBox(height: 16),
               Text(
-                'Selecciona el rango de fechas y el formato del reporte',
+                'Selecciona el rango de fechas. El reporte se genera en Excel (.xlsx).',
                 textAlign: TextAlign.center,
                 style: Theme.of(context)
                     .textTheme
@@ -85,28 +88,12 @@ class _ExportViewState extends State<_ExportView> {
               const SizedBox(height: AppDimensions.paddingL),
               Text('Formato', style: Theme.of(context).textTheme.titleSmall),
               const SizedBox(height: AppDimensions.paddingM),
-              Row(
-                children: [
-                  Expanded(
-                    child: _FormatoTile(
-                      formato: 'PDF',
-                      icono: Icons.picture_as_pdf_rounded,
-                      color: AppColors.critico,
-                      seleccionado: _formato == 'PDF',
-                      onTap: () => setState(() => _formato = 'PDF'),
-                    ),
-                  ),
-                  const SizedBox(width: AppDimensions.paddingM),
-                  Expanded(
-                    child: _FormatoTile(
-                      formato: 'CSV',
-                      icono: Icons.table_chart_rounded,
-                      color: AppColors.informacion,
-                      seleccionado: _formato == 'CSV',
-                      onTap: () => setState(() => _formato = 'CSV'),
-                    ),
-                  ),
-                ],
+              const _FormatoTile(
+                formato: 'Excel (.xlsx)',
+                icono: Icons.table_chart_rounded,
+                color: AppColors.verde,
+                seleccionado: true,
+                onTap: null,
               ),
               const SizedBox(height: 32),
               SizedBox(
@@ -122,7 +109,7 @@ class _ExportViewState extends State<_ExportView> {
                               ShareParams(
                                 files: [
                                   XFile(prov.rutaExportada!,
-                                      mimeType: 'text/csv'),
+                                      mimeType: _xlsxMime),
                                 ],
                                 subject: 'Reporte OryzaFlow',
                               ),
@@ -218,7 +205,7 @@ class _FormatoTile extends StatelessWidget {
   final IconData icono;
   final Color color;
   final bool seleccionado;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   const _FormatoTile({
     required this.formato,

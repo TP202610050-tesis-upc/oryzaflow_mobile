@@ -164,14 +164,12 @@ class _ReadingsGrid extends StatelessWidget {
           '${nodo.temperatura.toStringAsFixed(1)}°C', 'Temperatura'),
       (Icons.water_drop_outlined, AppColors.chartHumedad,
           '${nodo.humedad.toStringAsFixed(1)}%', 'Humedad'),
-      (Icons.air_rounded, AppColors.chartFlujoAire,
-          '${nodo.flujoAire.toStringAsFixed(1)}%', 'Flujo Aire'),
       (Icons.grass_rounded, AppColors.chartHumedadGrano,
           '${nodo.humedadGrano.toStringAsFixed(1)}%', 'H. Grano'),
     ];
 
     return GridView.count(
-      crossAxisCount: 4,
+      crossAxisCount: 3,
       mainAxisSpacing: 6,
       crossAxisSpacing: 6,
       childAspectRatio: 0.85,

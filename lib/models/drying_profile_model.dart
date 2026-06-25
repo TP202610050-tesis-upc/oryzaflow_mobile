@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import '../core/network/json_mappers.dart';
 
 class DryingProfileModel extends Equatable {
   final String id;
@@ -6,7 +7,6 @@ class DryingProfileModel extends Equatable {
   final String descripcion;
   final double temperaturaObjetivo;
   final double humedadObjetivo;
-  final double flujoAireObjetivo;
   final double humedadGranoObjetivo;
   final int duracionEstimadaMinutos;
   final DateTime creadoEn;
@@ -18,19 +18,40 @@ class DryingProfileModel extends Equatable {
     required this.descripcion,
     required this.temperaturaObjetivo,
     required this.humedadObjetivo,
-    required this.flujoAireObjetivo,
     required this.humedadGranoObjetivo,
     required this.duracionEstimadaMinutos,
     required this.creadoEn,
     required this.creadoPorId,
   });
 
+  factory DryingProfileModel.fromJson(Map<String, dynamic> json) =>
+      DryingProfileModel(
+        id: json['id'].toString(),
+        nombre: json['nombre'] as String? ?? '',
+        descripcion: json['descripcion'] as String? ?? '',
+        temperaturaObjetivo: parseDouble(json['temperaturaObjetivo']),
+        humedadObjetivo: parseDouble(json['humedadObjetivo']),
+        humedadGranoObjetivo: parseDouble(json['humedadGranoObjetivo']),
+        duracionEstimadaMinutos:
+            (json['duracionEstimadaMinutos'] as num?)?.toInt() ?? 0,
+        creadoEn: parseFecha(json['createdAt']),
+        creadoPorId: json['creadoPorId']?.toString() ?? '',
+      );
+
+  Map<String, dynamic> toJson() => {
+        'nombre': nombre,
+        'descripcion': descripcion,
+        'temperaturaObjetivo': temperaturaObjetivo,
+        'humedadObjetivo': humedadObjetivo,
+        'humedadGranoObjetivo': humedadGranoObjetivo,
+        'duracionEstimadaMinutos': duracionEstimadaMinutos,
+      };
+
   DryingProfileModel copyWith({
     String? nombre,
     String? descripcion,
     double? temperaturaObjetivo,
     double? humedadObjetivo,
-    double? flujoAireObjetivo,
     double? humedadGranoObjetivo,
     int? duracionEstimadaMinutos,
   }) =>
@@ -40,9 +61,7 @@ class DryingProfileModel extends Equatable {
         descripcion: descripcion ?? this.descripcion,
         temperaturaObjetivo: temperaturaObjetivo ?? this.temperaturaObjetivo,
         humedadObjetivo: humedadObjetivo ?? this.humedadObjetivo,
-        flujoAireObjetivo: flujoAireObjetivo ?? this.flujoAireObjetivo,
-        humedadGranoObjetivo:
-            humedadGranoObjetivo ?? this.humedadGranoObjetivo,
+        humedadGranoObjetivo: humedadGranoObjetivo ?? this.humedadGranoObjetivo,
         duracionEstimadaMinutos:
             duracionEstimadaMinutos ?? this.duracionEstimadaMinutos,
         creadoEn: creadoEn,

@@ -66,7 +66,7 @@ class AppStrings {
   static const String eliminarSilo = 'Eliminar Silo';
   static const String nombreSilo = 'Nombre del silo';
   static const String ubicacion = 'Ubicación';
-  static const String capacidadToneladas = 'Capacidad (toneladas)';
+  static const String capacidadToneladas = 'Capacidad (kg)';
   static const String estadoSilo = 'Estado';
   static const String disponibilidad = 'Disponibilidad';
   static const String disponible = 'Disponible';

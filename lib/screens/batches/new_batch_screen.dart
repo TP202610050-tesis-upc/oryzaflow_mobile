@@ -175,7 +175,7 @@ class _NewBatchFormState extends State<_NewBatchForm> {
                       .toList(),
                   value: _siloSel,
                   itemLabel: (s) =>
-                      '${s.nombre} (${s.capacidadToneladas.toStringAsFixed(0)}t)',
+                      '${s.nombre} (${s.capacidadKg.toStringAsFixed(0)} kg)',
                   onChanged: (s) => setState(() => _siloSel = s),
                   icon: Icons.warehouse_rounded,
                 ),
@@ -312,7 +312,6 @@ class _PerfilResumen extends StatelessWidget {
             children: [
               _KV('Temp. obj.', '${perfil.temperaturaObjetivo}°C'),
               _KV('H. obj.', '${perfil.humedadObjetivo}%'),
-              _KV('Flujo', '${perfil.flujoAireObjetivo}%'),
               _KV('Duración est.',
                   '${(perfil.duracionEstimadaMinutos / 60).toStringAsFixed(0)}h'),
             ],

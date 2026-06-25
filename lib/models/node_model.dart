@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import '../core/enums/node_status.dart';
+import '../core/network/json_mappers.dart';
 
 class NodeModel extends Equatable {
   final String id;
@@ -8,7 +9,6 @@ class NodeModel extends Equatable {
   final NodeStatus estado;
   final double temperatura;
   final double humedad;
-  final double flujoAire;
   final double humedadGrano;
   final DateTime ultimaActualizacion;
   final String? loteActivoId;
@@ -22,7 +22,6 @@ class NodeModel extends Equatable {
     required this.estado,
     required this.temperatura,
     required this.humedad,
-    required this.flujoAire,
     required this.humedadGrano,
     required this.ultimaActualizacion,
     required this.ipAddress,
@@ -30,13 +29,28 @@ class NodeModel extends Equatable {
     this.loteActivoId,
   });
 
+  factory NodeModel.fromJson(Map<String, dynamic> json) => NodeModel(
+        id: json['id'].toString(),
+        nombre: json['nombre'] as String? ?? '',
+        ubicacion: json['ubicacion'] as String? ?? '',
+        estado: nodeStatusFromApi(json['estado'] as String),
+        temperatura: parseDouble(json['temperatura']),
+        humedad: parseDouble(json['humedad']),
+        humedadGrano: parseDouble(json['humedadGrano']),
+        ultimaActualizacion: parseFechaNullable(json['ultimaActualizacion']) ??
+            DateTime.fromMillisecondsSinceEpoch(0),
+        loteActivoId: json['loteActivoId']?.toString(),
+        ipAddress: json['ipAddress'] as String? ?? '',
+        intervaloEnvioSegundos:
+            (json['intervaloEnvioSegundos'] as num?)?.toInt() ?? 0,
+      );
+
   NodeModel copyWith({
     String? nombre,
     String? ubicacion,
     NodeStatus? estado,
     double? temperatura,
     double? humedad,
-    double? flujoAire,
     double? humedadGrano,
     DateTime? ultimaActualizacion,
     String? loteActivoId,
@@ -50,7 +64,6 @@ class NodeModel extends Equatable {
         estado: estado ?? this.estado,
         temperatura: temperatura ?? this.temperatura,
         humedad: humedad ?? this.humedad,
-        flujoAire: flujoAire ?? this.flujoAire,
         humedadGrano: humedadGrano ?? this.humedadGrano,
         ultimaActualizacion: ultimaActualizacion ?? this.ultimaActualizacion,
         loteActivoId: loteActivoId ?? this.loteActivoId,
@@ -60,7 +73,8 @@ class NodeModel extends Equatable {
       );
 
   @override
-  List<Object?> get props =>
-      [id, estado, temperatura, humedad, flujoAire, humedadGrano,
-        ultimaActualizacion, loteActivoId];
+  List<Object?> get props => [
+        id, estado, temperatura, humedad, humedadGrano,
+        ultimaActualizacion, loteActivoId,
+      ];
 }

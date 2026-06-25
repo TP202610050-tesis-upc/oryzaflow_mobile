@@ -188,8 +188,6 @@ class _UmbralFormState extends State<_UmbralForm> {
       'tempMax': TextEditingController(text: u.temperaturaMax.toString()),
       'humMin': TextEditingController(text: u.humedadMin.toString()),
       'humMax': TextEditingController(text: u.humedadMax.toString()),
-      'flujoMin': TextEditingController(text: u.flujoAireMin.toString()),
-      'flujoMax': TextEditingController(text: u.flujoAireMax.toString()),
       'granoMin': TextEditingController(text: u.humedadGranoMin.toString()),
       'granoMax': TextEditingController(text: u.humedadGranoMax.toString()),
     };
@@ -210,8 +208,6 @@ class _UmbralFormState extends State<_UmbralForm> {
       temperaturaMax: double.tryParse(_ctrls['tempMax']!.text) ?? widget.umbrales.temperaturaMax,
       humedadMin: double.tryParse(_ctrls['humMin']!.text) ?? widget.umbrales.humedadMin,
       humedadMax: double.tryParse(_ctrls['humMax']!.text) ?? widget.umbrales.humedadMax,
-      flujoAireMin: double.tryParse(_ctrls['flujoMin']!.text) ?? widget.umbrales.flujoAireMin,
-      flujoAireMax: double.tryParse(_ctrls['flujoMax']!.text) ?? widget.umbrales.flujoAireMax,
       humedadGranoMin: double.tryParse(_ctrls['granoMin']!.text) ?? widget.umbrales.humedadGranoMin,
       humedadGranoMax: double.tryParse(_ctrls['granoMax']!.text) ?? widget.umbrales.humedadGranoMax,
     );
@@ -244,14 +240,6 @@ class _UmbralFormState extends State<_UmbralForm> {
           unidad: '%',
           minCtrl: _ctrls['humMin']!,
           maxCtrl: _ctrls['humMax']!,
-        ),
-        _UmbralSection(
-          titulo: AppStrings.flujoAire,
-          icon: Icons.air_rounded,
-          color: AppColors.chartFlujoAire,
-          unidad: '%',
-          minCtrl: _ctrls['flujoMin']!,
-          maxCtrl: _ctrls['flujoMax']!,
         ),
         _UmbralSection(
           titulo: AppStrings.humedadGrano,
