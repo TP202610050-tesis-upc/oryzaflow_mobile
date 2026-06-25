@@ -83,6 +83,15 @@ class AppStrings {
   static const String temperaturaMaxima = 'Temperatura máxima (°C)';
   static const String tiempoEstimado = 'Tiempo estimado (horas)';
 
+  // Drying profiles (perfiles de secado)
+  static const String perfilesSecado = 'Perfiles de secado';
+  static const String nuevoPerfilSecado = 'Nuevo Perfil';
+  static const String editarPerfilSecado = 'Editar Perfil de Secado';
+  static const String nombrePerfil = 'Nombre del perfil';
+  static const String humedadGranoObjetivo = 'Humedad del grano objetivo (%)';
+  static const String temperaturaObjetivo = 'Temperatura objetivo (°C)';
+  static const String duracionEstimada = 'Duración estimada (min)';
+
   // Batches
   static const String lotes = 'Lotes de Secado';
   static const String nuevoLote = 'Nuevo Lote';
@@ -104,7 +113,6 @@ class AppStrings {
 
   // Monitoring
   static const String monitoreo = 'Monitoreo';
-  static const String parametros = 'Parámetros';
   static const String configEsp32 = 'Config. ESP32';
   static const String lecturasEnVivo = 'Lecturas en Vivo';
   static const String ultimasDoceHoras = 'Últimas 2 horas';
@@ -114,8 +122,6 @@ class AppStrings {
   static const String puerto = 'Puerto';
   static const String intervaloEnvio = 'Intervalo de envío (s)';
   static const String calibracion = 'Calibración de sensores';
-  static const String umbralMinimo = 'Mín.';
-  static const String umbralMaximo = 'Máx.';
 
   // Sensors
   static const String temperatura = 'Temperatura';

@@ -38,13 +38,6 @@ class _MonitoringView extends StatelessWidget {
       appBar: OryzaFlowAppBar(
         titulo: AppStrings.monitoreo,
         onMenuTap: () => Scaffold.of(context).openDrawer(),
-        acciones: [
-          IconButton(
-            icon: const Icon(Icons.tune_rounded),
-            tooltip: AppStrings.parametros,
-            onPressed: () => context.push(RouteNames.parametros),
-          ),
-        ],
       ),
       body: Consumer<MonitoringProvider>(
         builder: (_, prov, __) {
@@ -67,7 +60,7 @@ class _MonitoringView extends StatelessWidget {
               itemCount: prov.nodos.length,
               separatorBuilder: (_, __) =>
                   const SizedBox(height: AppDimensions.paddingS),
-              itemBuilder: (_, i) => _NodeCard(nodo: prov.nodos[i], prov: prov),
+              itemBuilder: (_, i) => _NodeCard(nodo: prov.nodos[i]),
             ),
           );
         },
@@ -78,8 +71,7 @@ class _MonitoringView extends StatelessWidget {
 
 class _NodeCard extends StatelessWidget {
   final NodeModel nodo;
-  final MonitoringProvider prov;
-  const _NodeCard({required this.nodo, required this.prov});
+  const _NodeCard({required this.nodo});
 
   @override
   Widget build(BuildContext context) {
@@ -141,9 +133,6 @@ class _NodeCard extends StatelessWidget {
                     style: const TextStyle(
                         fontSize: 10,
                         color: AppColors.textoSecundario)),
-                const SizedBox(height: 6),
-                const Divider(height: 1),
-                _VolteoAction(nodo: nodo, prov: prov),
               ],
             ],
           ),
@@ -221,74 +210,6 @@ class _ReadingTile extends StatelessWidget {
                   fontSize: 9, color: AppColors.textoSecundario),
               textAlign: TextAlign.center),
         ],
-      ),
-    );
-  }
-}
-
-class _VolteoAction extends StatelessWidget {
-  final NodeModel nodo;
-  final MonitoringProvider prov;
-  const _VolteoAction({required this.nodo, required this.prov});
-
-  @override
-  Widget build(BuildContext context) {
-    final ultimo = prov.ultimoVolteo(nodo.id);
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            ultimo == null
-                ? 'Sin volteos registrados'
-                : 'Último volteo: ${DateFormatter.fechaHora(ultimo.timestamp)} (manual)',
-            style: const TextStyle(
-                fontSize: 10, color: AppColors.textoSecundario),
-          ),
-        ),
-        TextButton.icon(
-          onPressed: prov.estaProcesando ? null : () => _confirmar(context),
-          icon: const Icon(Icons.autorenew_rounded, size: 16),
-          label: const Text(AppStrings.registrarVolteo),
-          style: TextButton.styleFrom(
-            visualDensity: VisualDensity.compact,
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Future<void> _confirmar(BuildContext context) async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text(AppStrings.volteoManual),
-        content: Text(
-          'Registrar un volteo manual del grano en "${nodo.nombre}". '
-          'Esta acción la decide y ejecuta el operario (volteo con rastrillo); '
-          'el sistema solo registra el método y la hora.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Registrar'),
-          ),
-        ],
-      ),
-    );
-    if (ok != true || !context.mounted) return;
-    final exito = await prov.registrarVolteo(nodo.id);
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(exito
-            ? 'Volteo manual registrado'
-            : (prov.error ?? 'No se pudo registrar el volteo')),
-        backgroundColor: exito ? AppColors.verde : AppColors.critico,
       ),
     );
   }

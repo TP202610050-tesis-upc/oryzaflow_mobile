@@ -17,6 +17,8 @@ class RouteNames {
   static const String editarSilo = '/silos/editar';
   static const String variedades = '/silos/variedades';
   static const String editarVariedad = '/silos/variedades/editar';
+  static const String perfilesSecado = '/silos/perfiles';
+  static const String editarPerfilSecado = '/silos/perfiles/editar';
   static const String disponibilidad = '/silos/disponibilidad';
 
   // Módulo 4
@@ -27,7 +29,6 @@ class RouteNames {
 
   // Módulo 5
   static const String monitoreo = '/monitoreo';
-  static const String parametros = '/monitoreo/parametros';
   static const String configEsp32 = '/monitoreo/esp32';
   static const String detalleNodo = '/monitoreo/:nodoId';
   static String detalleNodoPath(String id) => '/monitoreo/$id';

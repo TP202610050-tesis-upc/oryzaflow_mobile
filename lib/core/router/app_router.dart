@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../core/enums/user_role.dart';
+import '../../models/drying_profile_model.dart';
 import '../../models/silo_model.dart';
 import '../../models/user_model.dart';
 import '../../models/variety_model.dart';
@@ -17,7 +18,6 @@ import '../../screens/dashboard/alerts_screen.dart';
 import '../../screens/dashboard/dashboard_screen.dart';
 import '../../screens/monitoring/esp32_config_screen.dart';
 import '../../screens/monitoring/monitoring_screen.dart';
-import '../../screens/monitoring/parameters_screen.dart';
 import '../../screens/reports/drying_charts_screen.dart';
 import '../../screens/reports/drying_history_screen.dart';
 import '../../screens/reports/export_report_screen.dart';
@@ -27,6 +27,8 @@ import '../../screens/settings/help_faq_screen.dart';
 import '../../screens/settings/preferences_screen.dart';
 import '../../screens/settings/settings_screen.dart';
 import '../../screens/silos/availability_screen.dart';
+import '../../screens/silos/drying_profiles_screen.dart';
+import '../../screens/silos/edit_drying_profile_screen.dart';
 import '../../screens/silos/edit_silo_screen.dart';
 import '../../screens/silos/edit_variety_screen.dart';
 import '../../screens/silos/silos_screen.dart';
@@ -81,6 +83,13 @@ class AppRouter {
                     GoRoute(path: 'editar', builder: (_, state) => EditVarietyScreen(variedad: state.extra as VarietyModel?)),
                   ],
                 ),
+                GoRoute(
+                  path: 'perfiles',
+                  builder: (_, __) => const DryingProfilesScreen(),
+                  routes: [
+                    GoRoute(path: 'editar', builder: (_, state) => EditDryingProfileScreen(perfil: state.extra as DryingProfileModel?)),
+                  ],
+                ),
                 GoRoute(path: 'disponibilidad', builder: (_, __) => const AvailabilityScreen()),
               ],
             ),
@@ -98,7 +107,6 @@ class AppRouter {
               path: RouteNames.monitoreo,
               builder: (_, __) => const MonitoringScreen(),
               routes: [
-                GoRoute(path: 'parametros', builder: (_, __) => const ParametersScreen()),
                 GoRoute(path: 'esp32', builder: (_, state) => Esp32ConfigScreen(nodoId: state.uri.queryParameters['nodo'])),
               ],
             ),
@@ -274,12 +282,19 @@ class _AppDrawer extends StatelessWidget {
                     current: currentLocation,
                     selectedIf: (loc) =>
                         loc.startsWith(RouteNames.silos) &&
-                        !loc.startsWith(RouteNames.variedades),
+                        !loc.startsWith(RouteNames.variedades) &&
+                        !loc.startsWith(RouteNames.perfilesSecado),
                   ),
                   _DrawerItem(
                     icon: Icons.grass_outlined,
                     label: AppStrings.variedades,
                     route: RouteNames.variedades,
+                    current: currentLocation,
+                  ),
+                  _DrawerItem(
+                    icon: Icons.tune_outlined,
+                    label: AppStrings.perfilesSecado,
+                    route: RouteNames.perfilesSecado,
                     current: currentLocation,
                   ),
                   _DrawerItem(

@@ -3,12 +3,11 @@ import '../../core/enums/node_status.dart';
 import '../../models/esp32_config_model.dart';
 import '../../models/node_model.dart';
 import '../../models/sensor_reading_model.dart';
-import '../../models/threshold_model.dart';
-import '../../models/volteo_model.dart';
 import '../i_node_repository.dart';
 
 /// Nodos reales (BC3). Config = /config + /calibration; lecturas = /nodes/{id}/readings.
-/// Umbrales (#43-44) y volteo (#45) NO existen aún en el backend → stub local (ver docs §3.7).
+/// Umbrales (#43-44) se cubren vía masterdata (variedad/perfil); volteo (#45) es por lote
+/// (POST /batches/{id}/flip) — ver docs §7.9 y §7.10.
 class RealNodeRepository implements INodeRepository {
   final ApiClient _api;
 
@@ -62,27 +61,4 @@ class RealNodeRepository implements INodeRepository {
         .put('/nodes/${config.nodoId}/calibration', data: config.toCalibrationJson());
     return Esp32ConfigModel.fromNodeJson(res.data as Map<String, dynamic>);
   }
-
-  // ── Stub local (sin backend; #43-45 pendientes) ──
-
-  @override
-  Future<ThresholdModel> obtenerUmbrales(String nodoId) async =>
-      ThresholdModel(
-        nodoId: nodoId,
-        temperaturaMin: 35, temperaturaMax: 45,
-        humedadMin: 40, humedadMax: 70,
-        humedadGranoMin: 11, humedadGranoMax: 25,
-      );
-
-  @override
-  Future<ThresholdModel> actualizarUmbrales(ThresholdModel umbrales) async =>
-      umbrales; // no se persiste (sin endpoint)
-
-  @override
-  Future<VolteoModel> registrarVolteo(String nodoId) async => VolteoModel(
-        id: 'volteo-local-${DateTime.now().millisecondsSinceEpoch}',
-        nodoId: nodoId,
-        metodo: MetodoVolteo.manual,
-        timestamp: DateTime.now(),
-      );
 }
