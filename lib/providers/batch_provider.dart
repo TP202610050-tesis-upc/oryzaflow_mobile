@@ -165,6 +165,22 @@ class BatchProvider extends ChangeNotifier {
     }
   }
 
+  /// Registra un volteo manual del lote (#45). No altera el lote; devuelve éxito/fallo.
+  Future<bool> registrarVolteo(String id) async {
+    _procesando = true;
+    notifyListeners();
+    try {
+      await _batchRepo.registrarVolteo(id);
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      return false;
+    } finally {
+      _procesando = false;
+      notifyListeners();
+    }
+  }
+
   void _actualizarLoteEnLista(BatchModel updated) {
     final idx = _lotes.indexWhere((l) => l.id == updated.id);
     if (idx != -1) _lotes[idx] = updated;

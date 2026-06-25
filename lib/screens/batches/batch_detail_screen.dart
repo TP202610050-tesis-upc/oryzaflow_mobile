@@ -9,6 +9,7 @@ import '../../core/utils/date_formatter.dart';
 import '../../core/utils/sensor_utils.dart';
 import '../../models/batch_model.dart';
 import '../../providers/batch_provider.dart';
+import '../../widgets/common/confirmation_dialog.dart';
 import '../../widgets/common/empty_state_widget.dart';
 import '../../widgets/common/error_state_widget.dart';
 import '../../widgets/common/loading_shimmer.dart';
@@ -303,8 +304,44 @@ class _ControlSection extends StatelessWidget {
                       side: const BorderSide(color: AppColors.critico)),
                 ),
               ),
+            if (lote.estado == BatchStatus.enProceso) ...[
+              const SizedBox(height: AppDimensions.paddingS),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed:
+                      prov.estaProcesando ? null : () => _confirmarVolteo(context),
+                  icon: const Icon(Icons.autorenew_rounded),
+                  label: const Text(AppStrings.registrarVolteo),
+                ),
+              ),
+            ],
           ],
         ),
+      ),
+    );
+  }
+
+  Future<void> _confirmarVolteo(BuildContext context) async {
+    final ok = await mostrarDialogoConfirmacion(
+      context: context,
+      titulo: AppStrings.volteoManual,
+      mensaje:
+          'Registrar un volteo manual del grano del lote "${lote.codigo}". '
+          'Esta acción la decide y ejecuta el operario (volteo con rastrillo); '
+          'el sistema solo registra el método y la hora.',
+      textoCancelar: 'Cancelar',
+      textoConfirmar: 'Registrar',
+    );
+    if (ok != true || !context.mounted) return;
+    final exito = await prov.registrarVolteo(lote.id);
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(exito
+            ? 'Volteo manual registrado'
+            : (prov.error ?? 'No se pudo registrar el volteo')),
+        backgroundColor: exito ? AppColors.verde : AppColors.critico,
       ),
     );
   }

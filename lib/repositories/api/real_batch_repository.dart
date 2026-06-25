@@ -3,6 +3,7 @@ import '../../core/network/json_mappers.dart';
 import '../../core/enums/batch_status.dart';
 import '../../models/batch_model.dart';
 import '../../models/sensor_reading_model.dart';
+import '../../models/volteo_model.dart';
 import '../i_batch_repository.dart';
 
 /// Lotes de secado reales (BC4): ciclo de vida + lecturas de telemetría.
@@ -56,6 +57,12 @@ class RealBatchRepository implements IBatchRepository {
   Future<BatchModel> detenerSecado(String id) async {
     final res = await _api.dio.post('/batches/$id/stop');
     return BatchModel.fromJson(res.data as Map<String, dynamic>);
+  }
+
+  @override
+  Future<VolteoModel> registrarVolteo(String loteId) async {
+    final res = await _api.dio.post('/batches/$loteId/flip');
+    return VolteoModel.fromJson(res.data as Map<String, dynamic>);
   }
 
   @override
