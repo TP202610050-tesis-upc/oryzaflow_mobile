@@ -7,6 +7,7 @@ import '../../core/constants/app_strings.dart';
 import '../../core/router/route_names.dart';
 import '../../models/user_model.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/notifications_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../widgets/common/oryzaflow_app_bar.dart';
 import '../../widgets/common/role_badge.dart';
@@ -52,15 +53,21 @@ class SettingsScreen extends StatelessWidget {
             ),
           ],
           _SectionHeader('Aplicación'),
-          _SettingsTile(
-            icon: Icons.notifications_outlined,
-            titulo: AppStrings.notificaciones,
-            subtitulo: 'Alertas push y sonidos',
-            trailing: Switch(
-              value: true,
-              onChanged: (_) {},
+          Consumer<NotificationsProvider>(
+            builder: (ctx, notif, _) => _SettingsTile(
+              icon: Icons.notifications_outlined,
+              titulo: AppStrings.notificaciones,
+              subtitulo: notif.activadas
+                  ? 'Alertas push y sonidos'
+                  : 'Permiso no concedido — toca para activar',
+              trailing: Switch(
+                value: notif.activadas,
+                onChanged: notif.cargando
+                    ? null
+                    : (v) => _onNotificacionesChanged(ctx, notif, v),
+              ),
+              onTap: null,
             ),
-            onTap: null,
           ),
           _SectionHeader('Soporte'),
           _SettingsTile(
@@ -93,6 +100,33 @@ class SettingsScreen extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+Future<void> _onNotificacionesChanged(
+    BuildContext context, NotificationsProvider notif, bool valor) async {
+  final messenger = ScaffoldMessenger.of(context);
+  final result = await notif.setActivadas(valor);
+  if (!context.mounted) return;
+  switch (result) {
+    case NotifToggleResult.requiereAjustes:
+      messenger.showSnackBar(SnackBar(
+        content: const Text(
+            'Permiso de notificaciones bloqueado. Actívalo en los ajustes.'),
+        action: SnackBarAction(
+          label: 'Abrir ajustes',
+          onPressed: notif.abrirAjustes,
+        ),
+      ));
+      break;
+    case NotifToggleResult.denegado:
+      messenger.showSnackBar(const SnackBar(
+        content: Text('Permiso de notificaciones denegado'),
+      ));
+      break;
+    case NotifToggleResult.concedido:
+    case NotifToggleResult.desactivado:
+      break;
   }
 }
 

@@ -10,6 +10,7 @@ import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'providers/alert_provider.dart';
 import 'providers/auth_provider.dart';
+import 'providers/notifications_provider.dart';
 import 'providers/theme_provider.dart';
 
 Future<void> main() async {
@@ -26,6 +27,8 @@ Future<void> main() async {
   await configurarDependencias();
   // Ante un 401, el ApiClient resetea la sesión para que el router lleve a login.
   sl<ApiClient>().onUnauthorized = () => sl<AuthProvider>().sesionExpirada();
+  // Carga la preferencia de notificaciones + estado del permiso del SO.
+  await sl<NotificationsProvider>().cargar();
   await initializeDateFormatting('es', null);
   runApp(const OryzaFlowApp());
 }
@@ -52,6 +55,7 @@ class _OryzaFlowAppState extends State<OryzaFlowApp> {
       providers: [
         ChangeNotifierProvider.value(value: sl<AuthProvider>()),
         ChangeNotifierProvider.value(value: sl<ThemeProvider>()),
+        ChangeNotifierProvider.value(value: sl<NotificationsProvider>()),
         ChangeNotifierProvider(create: (_) => sl<AlertProvider>()),
       ],
       child: Consumer<ThemeProvider>(

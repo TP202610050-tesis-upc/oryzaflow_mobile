@@ -6,6 +6,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/batch_provider.dart';
 import '../../providers/dashboard_provider.dart';
 import '../../providers/monitoring_provider.dart';
+import '../../providers/notifications_provider.dart';
 import '../../providers/report_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/silo_provider.dart';
@@ -72,6 +73,8 @@ Future<void> configurarDependencias() async {
   sl.registerLazySingleton<AuthProvider>(
       () => AuthProvider(sl<IAuthRepository>()));
   sl.registerLazySingleton<ThemeProvider>(() => ThemeProvider());
+  sl.registerLazySingleton<NotificationsProvider>(
+      () => NotificationsProvider());
 
   // All others are Factory — created fresh per screen, disposed on pop
   sl.registerFactory<DashboardProvider>(() => DashboardProvider(
