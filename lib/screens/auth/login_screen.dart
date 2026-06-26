@@ -95,14 +95,25 @@ class _LoginScreenState extends State<LoginScreen> {
     return Column(
       children: [
         Container(
-          width: 64,
-          height: 64,
+          width: 76,
+          height: 76,
+          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: AppColors.verde,
-            borderRadius: BorderRadius.circular(16),
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: AppColors.borde),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withAlpha(15),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-          child:
-              const Icon(Icons.eco_rounded, size: 36, color: Colors.white),
+          child: Image.asset(
+            'assets/images/oryzaflow-logo.png',
+            fit: BoxFit.contain,
+          ),
         ),
         const SizedBox(height: 20),
         Text(AppStrings.appNombre,

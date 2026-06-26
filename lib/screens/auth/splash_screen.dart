@@ -29,14 +29,17 @@ class _SplashScreenState extends State<SplashScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: 80,
-              height: 80,
+              width: 104,
+              height: 104,
+              padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
-                color: Colors.white.withAlpha(30),
-                borderRadius: BorderRadius.circular(20),
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(26),
               ),
-              child: const Icon(Icons.eco_rounded,
-                  size: 48, color: Colors.white),
+              child: Image.asset(
+                'assets/images/oryzaflow-logo.png',
+                fit: BoxFit.contain,
+              ),
             ),
             const SizedBox(height: 24),
             Text(
