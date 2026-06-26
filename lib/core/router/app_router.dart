@@ -512,28 +512,33 @@ class _DrawerLogoutButton extends StatelessWidget {
             color: Color(0xFFEF9A9A)),
       ),
       onTap: () async {
-        Navigator.of(context).pop();
+        // Capturamos las referencias antes de cerrar el drawer: al hacer pop,
+        // el context de este ListTile queda desmontado (defunct) y dejaría de
+        // funcionar tanto el diálogo como el cierre de sesión.
+        final authProvider = context.read<AuthProvider>();
+        final navigator = Navigator.of(context);
+        navigator.pop(); // cierra el drawer
         final confirmed = await showDialog<bool>(
-          context: context,
-          builder: (_) => AlertDialog(
+          context: navigator.context,
+          builder: (dialogContext) => AlertDialog(
             title: const Text('Cerrar sesión'),
             content:
                 const Text('¿Estás seguro de que quieres cerrar sesión?'),
             actions: [
               TextButton(
-                onPressed: () => Navigator.pop(context, false),
+                onPressed: () => Navigator.pop(dialogContext, false),
                 child: const Text('Cancelar'),
               ),
               TextButton(
-                onPressed: () => Navigator.pop(context, true),
+                onPressed: () => Navigator.pop(dialogContext, true),
                 child: const Text('Salir',
                     style: TextStyle(color: Colors.red)),
               ),
             ],
           ),
         );
-        if (confirmed == true && context.mounted) {
-          await context.read<AuthProvider>().cerrarSesion();
+        if (confirmed == true) {
+          await authProvider.cerrarSesion();
         }
       },
     );
