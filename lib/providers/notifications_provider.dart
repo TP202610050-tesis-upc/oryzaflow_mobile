@@ -25,6 +25,9 @@ class NotificationsProvider extends ChangeNotifier {
   bool _permisoConcedido = false;
   bool _cargando = true;
 
+  /// Gancho que fija `main` (HU-012): true → registrar token push; false → retirarlo.
+  Future<void> Function(bool activadas)? alCambiar;
+
   /// Valor efectivo para el switch: solo está activo si el usuario lo quiere
   /// y el SO concedió el permiso.
   bool get activadas => _prefActivadas && _permisoConcedido;
@@ -51,6 +54,7 @@ class NotificationsProvider extends ChangeNotifier {
       await _persistir(false);
       _permisoConcedido = await Permission.notification.isGranted;
       notifyListeners();
+      await alCambiar?.call(false);
       return NotifToggleResult.desactivado;
     }
 
@@ -60,6 +64,7 @@ class NotificationsProvider extends ChangeNotifier {
     if (status.isGranted) {
       await _persistir(true);
       notifyListeners();
+      await alCambiar?.call(true);
       return NotifToggleResult.concedido;
     }
 

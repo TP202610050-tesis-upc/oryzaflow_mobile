@@ -1,5 +1,6 @@
 import 'package:get_it/get_it.dart';
 import '../network/api_client.dart';
+import '../notifications/push_service.dart';
 import '../network/token_storage.dart';
 import '../../providers/alert_provider.dart';
 import '../../providers/auth_provider.dart';
@@ -75,6 +76,9 @@ Future<void> configurarDependencias() async {
   sl.registerLazySingleton<ThemeProvider>(() => ThemeProvider());
   sl.registerLazySingleton<NotificationsProvider>(
       () => NotificationsProvider());
+  // Push FCM (HU-012): singleton; se inicializa en main.
+  sl.registerLazySingleton<PushService>(
+      () => PushService(sl<IAlertRepository>()));
 
   // All others are Factory — created fresh per screen, disposed on pop
   sl.registerFactory<DashboardProvider>(() => DashboardProvider(

@@ -43,6 +43,17 @@ class RealAlertRepository implements IAlertRepository {
   }
 
   @override
+  Future<void> registrarTokenDispositivo(String token, {String plataforma = 'android'}) async {
+    await _api.dio.post('/notifications/device-tokens',
+        data: {'token': token, 'plataforma': plataforma});
+  }
+
+  @override
+  Future<void> eliminarTokenDispositivo(String token) async {
+    await _api.dio.delete('/notifications/device-tokens/${Uri.encodeComponent(token)}');
+  }
+
+  @override
   Future<void> restaurarAlerta(AlertModel alerta) async {
     // El backend no expone restore (el descarte es soft, conserva historial). El undo del
     // swipe se maneja en el cliente difiriendo el DELETE.

@@ -6,7 +6,9 @@ import 'package:provider/provider.dart';
 import 'core/constants/app_strings.dart';
 import 'core/di/injection_container.dart';
 import 'core/network/api_client.dart';
+import 'core/notifications/push_service.dart';
 import 'core/router/app_router.dart';
+import 'core/router/route_names.dart';
 import 'core/theme/app_theme.dart';
 import 'providers/alert_provider.dart';
 import 'providers/auth_provider.dart';
@@ -29,6 +31,20 @@ Future<void> main() async {
   sl<ApiClient>().onUnauthorized = () => sl<AuthProvider>().sesionExpirada();
   // Carga la preferencia de notificaciones + estado del permiso del SO.
   await sl<NotificationsProvider>().cargar();
+  // Push FCM (HU-012): canal con sonido, token del dispositivo ligado a la sesión y al switch de notificaciones.
+  final push = sl<PushService>();
+  push.habilitadas = sl<NotificationsProvider>().activadas;
+  await push.init();
+  sl<AuthProvider>().alIniciarSesion = push.registrar;
+  sl<AuthProvider>().alCerrarSesion = push.desregistrar;
+  sl<NotificationsProvider>().alCambiar = (activadas) async {
+    push.habilitadas = activadas;
+    if (activadas) {
+      await push.registrar();
+    } else {
+      await push.desregistrar();
+    }
+  };
   await initializeDateFormatting('es', null);
   runApp(const OryzaFlowApp());
 }
@@ -47,6 +63,8 @@ class _OryzaFlowAppState extends State<OryzaFlowApp> {
   void initState() {
     super.initState();
     _appRouter = AppRouter(sl<AuthProvider>());
+    // Tocar una notificación lleva a la pantalla de alertas.
+    sl<PushService>().onAbrirAlertas = () => _appRouter.router.go(RouteNames.alertas);
   }
 
   @override

@@ -13,6 +13,10 @@ class AuthProvider extends ChangeNotifier {
   UserModel? _usuario;
   String? _error;
 
+  /// Ganchos que fija `main` (HU-012): registrar el token push al abrir sesión y retirarlo al cerrarla.
+  Future<void> Function()? alIniciarSesion;
+  Future<void> Function()? alCerrarSesion;
+
   AuthEstado get estado => _estado;
   UserModel? get usuario => _usuario;
   String? get error => _error;
@@ -27,6 +31,7 @@ class AuthProvider extends ChangeNotifier {
       _estado = _usuario != null
           ? AuthEstado.autenticado
           : AuthEstado.noAutenticado;
+      if (_usuario != null) await alIniciarSesion?.call();
     } catch (_) {
       _estado = AuthEstado.noAutenticado;
     }
@@ -44,6 +49,7 @@ class AuthProvider extends ChangeNotifier {
       _usuario = await _repositorio.login(email: email, password: password);
       _estado = AuthEstado.autenticado;
       notifyListeners();
+      await alIniciarSesion?.call();
       return true;
     } catch (e) {
       _error = e.toString().replaceFirst('Exception: ', '');
@@ -54,6 +60,7 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> cerrarSesion() async {
+    await alCerrarSesion?.call(); // antes del logout: el DELETE del token necesita la sesión
     await _repositorio.logout();
     _usuario = null;
     _estado = AuthEstado.noAutenticado;
