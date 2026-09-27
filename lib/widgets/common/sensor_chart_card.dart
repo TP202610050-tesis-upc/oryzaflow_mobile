@@ -32,7 +32,7 @@ extension SensorTipoExtension on SensorTipo {
         SensorTipo.humedadGrano => Icons.grass_rounded,
       };
 
-  double Function(SensorReadingModel) get extractor => switch (this) {
+  double? Function(SensorReadingModel) get extractor => switch (this) {
         SensorTipo.temperatura => (r) => r.temperatura,
         SensorTipo.humedad => (r) => r.humedad,
         SensorTipo.humedadGrano => (r) => r.humedadGrano,
@@ -94,7 +94,7 @@ class SensorChartCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: AppDimensions.paddingM),
-            if (lecturas.isEmpty)
+            if (_toSpots().isEmpty)
               SizedBox(
                 height: AppDimensions.chartHeight,
                 child: Center(
@@ -212,11 +212,12 @@ class SensorChartCard extends StatelessWidget {
   }
 
   List<FlSpot> _toSpots() {
-    return lecturas
-        .map((r) => FlSpot(
-              r.timestamp.millisecondsSinceEpoch.toDouble(),
-              tipo.extractor(r),
-            ))
-        .toList();
+    final spots = <FlSpot>[];
+    for (final r in lecturas) {
+      final y = tipo.extractor(r);
+      if (y == null) continue; // publicación tipo A (sin lote): no hay estimación de grano
+      spots.add(FlSpot(r.timestamp.millisecondsSinceEpoch.toDouble(), y));
+    }
+    return spots;
   }
 }

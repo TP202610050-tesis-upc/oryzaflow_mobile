@@ -6,6 +6,7 @@ import '../../core/constants/app_dimensions.dart';
 import '../../core/constants/app_strings.dart';
 import '../../core/di/injection_container.dart';
 import '../../core/enums/batch_status.dart';
+import '../../core/enums/producto_destino.dart';
 import '../../core/router/route_names.dart';
 import '../../models/batch_model.dart';
 import '../../models/drying_profile_model.dart';
@@ -42,22 +43,38 @@ class _NewBatchFormState extends State<_NewBatchForm> {
   final _codigoCtrl = TextEditingController();
   final _pesoCtrl = TextEditingController();
   final _humedadInicialCtrl = TextEditingController();
+  final _duenoCtrl = TextEditingController();
 
   SiloModel? _siloSel;
   VarietyModel? _variedadSel;
   DryingProfileModel? _perfilSel;
   NodeModel? _nodoSel;
+  // CA-006-02: el destino comercial es obligatorio; sin él se bloquea "Guardar".
+  ProductoDestino? _productoSel;
+  bool _faltaProducto = false;
 
   @override
   void dispose() {
     _codigoCtrl.dispose();
     _pesoCtrl.dispose();
     _humedadInicialCtrl.dispose();
+    _duenoCtrl.dispose();
     super.dispose();
   }
 
   Future<void> _crear(BatchProvider prov) async {
-    if (!_formKey.currentState!.validate()) return;
+    final formOk = _formKey.currentState!.validate();
+    // CA-006-02: bloquear el registro y mostrar el mensaje del criterio (mismo texto que el 400 del backend).
+    setState(() => _faltaProducto = _productoSel == null);
+    if (_faltaProducto) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text(AppStrings.destinoComercialObligatorio),
+        backgroundColor: AppColors.advertencia,
+        duration: Duration(seconds: 4),
+      ));
+      return;
+    }
+    if (!formOk) return;
     if (_siloSel == null || _variedadSel == null ||
         _perfilSel == null || _nodoSel == null) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
@@ -92,6 +109,8 @@ class _NewBatchFormState extends State<_NewBatchForm> {
       fechaIngreso: DateTime.now(),
       operadorId: usuario.id,
       operadorNombre: usuario.nombre,
+      producto: _productoSel,
+      duenoCodigo: _duenoCtrl.text.trim().isEmpty ? null : _duenoCtrl.text.trim(),
     );
 
     final nuevo = await prov.crearLote(lote);
@@ -117,7 +136,7 @@ class _NewBatchFormState extends State<_NewBatchForm> {
             body: const ShimmerList(),
           );
         }
-        if (prov.error != null) {
+        if (prov.error != null && prov.silos.isEmpty) {
           return Scaffold(
             appBar: const OryzaFlowAppBar(
                 titulo: AppStrings.nuevoLote, mostrarBotonAtras: true),
@@ -166,6 +185,15 @@ class _NewBatchFormState extends State<_NewBatchForm> {
                   itemLabel: (v) => v.nombre,
                   onChanged: (v) => setState(() => _variedadSel = v),
                   icon: Icons.grass_rounded,
+                ),
+                const SizedBox(height: AppDimensions.paddingM),
+                _ProductoSelector(
+                  value: _productoSel,
+                  error: _faltaProducto,
+                  onChanged: (p) => setState(() {
+                    _productoSel = p;
+                    _faltaProducto = false;
+                  }),
                 ),
                 const SizedBox(height: AppDimensions.paddingM),
                 _DropdownField<SiloModel>(
@@ -237,6 +265,14 @@ class _NewBatchFormState extends State<_NewBatchForm> {
                     ),
                   ],
                 ),
+                const SizedBox(height: AppDimensions.paddingM),
+                TextFormField(
+                  controller: _duenoCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Dueño del grano (código, opcional)',
+                    prefixIcon: Icon(Icons.person_outline_rounded, size: 18),
+                  ),
+                ),
                 if (_perfilSel != null) ...[
                   const SizedBox(height: AppDimensions.paddingL),
                   _PerfilResumen(perfil: _perfilSel!),
@@ -246,6 +282,61 @@ class _NewBatchFormState extends State<_NewBatchForm> {
           ),
         );
       },
+    );
+  }
+}
+
+/// CA-006-02: selector obligatorio del destino comercial (fija la humedad meta).
+class _ProductoSelector extends StatelessWidget {
+  final ProductoDestino? value;
+  final bool error;
+  final ValueChanged<ProductoDestino> onChanged;
+  const _ProductoSelector({required this.value, required this.error, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    final borde = error ? AppColors.critico : AppColors.borde;
+    return Container(
+      padding: const EdgeInsets.all(AppDimensions.paddingM),
+      decoration: BoxDecoration(
+        border: Border.all(color: borde, width: error ? 1.5 : 1),
+        borderRadius: BorderRadius.circular(AppDimensions.radiusM),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.inventory_rounded, size: 18, color: AppColors.textoSecundario),
+              const SizedBox(width: 8),
+              Text('${AppStrings.destinoComercial} *',
+                  style: TextStyle(
+                      fontSize: 13,
+                      color: error ? AppColors.critico : AppColors.textoSecundario)),
+            ],
+          ),
+          const SizedBox(height: 8),
+          SegmentedButton<ProductoDestino>(
+            segments: ProductoDestino.values
+                .map((p) => ButtonSegment(value: p, label: Text(p.displayName)))
+                .toList(),
+            selected: value == null ? const {} : {value!},
+            emptySelectionAllowed: true,
+            onSelectionChanged: (s) {
+              if (s.isNotEmpty) onChanged(s.first);
+            },
+          ),
+          const SizedBox(height: 6),
+          Text(
+            error
+                ? AppStrings.destinoComercialObligatorio
+                : (value?.descripcion ?? 'Fija la humedad meta del lote'),
+            style: TextStyle(
+                fontSize: 12,
+                color: error ? AppColors.critico : AppColors.textoSecundario),
+          ),
+        ],
+      ),
     );
   }
 }

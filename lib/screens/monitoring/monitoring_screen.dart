@@ -76,8 +76,12 @@ class _NodeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = SensorUtils.colorNodeStatus(nodo.estado);
-    final activo = nodo.estado == NodeStatus.activo ||
-        nodo.estado == NodeStatus.alerta;
+    // CA-002-02: si la última lectura es más vieja que el intervalo esperado (lo decide el backend) o el nodo
+    // está desconectado, no se muestra un valor viejo, en blanco o en cero: se muestra el aviso con la hora.
+    final tieneLectura = nodo.ultimaActualizacion.millisecondsSinceEpoch > 0;
+    final sinDatosRecientes = nodo.datosDesactualizados ||
+        nodo.estado == NodeStatus.desconectado ||
+        nodo.estado == NodeStatus.inactivo;
 
     return Card(
       child: InkWell(
@@ -124,12 +128,16 @@ class _NodeCard extends StatelessWidget {
                   ),
                 ],
               ),
-              if (activo) ...[
-                const SizedBox(height: 12),
+              const SizedBox(height: 12),
+              if (sinDatosRecientes)
+                _SinDatosRecientes(
+                    ultimaLectura: tieneLectura ? nodo.ultimaActualizacion : null)
+              else ...[
                 _ReadingsGrid(nodo: nodo),
                 const SizedBox(height: 8),
                 Text(
-                    'Actualizado: ${DateFormatter.tiempoTranscurrido(nodo.ultimaActualizacion)}',
+                    'Actualizado: ${DateFormatter.tiempoTranscurrido(nodo.ultimaActualizacion)} '
+                    '(${DateFormatter.hora(nodo.ultimaActualizacion)})',
                     style: const TextStyle(
                         fontSize: 10,
                         color: AppColors.textoSecundario)),
@@ -137,6 +145,50 @@ class _NodeCard extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// CA-002-02: "Sin datos recientes del clima" junto a la hora de la última lectura válida.
+class _SinDatosRecientes extends StatelessWidget {
+  final DateTime? ultimaLectura;
+  const _SinDatosRecientes({this.ultimaLectura});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: AppColors.advertenciaFondo,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.advertencia.withAlpha(90)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.cloud_off_rounded, size: 20, color: AppColors.advertencia),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(AppStrings.sinDatosClima,
+                    style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                        color: AppColors.advertencia)),
+                const SizedBox(height: 2),
+                Text(
+                  ultimaLectura != null
+                      ? '${AppStrings.ultimaLecturaValida}: ${DateFormatter.fechaHora(ultimaLectura!)} '
+                          '(${DateFormatter.tiempoTranscurrido(ultimaLectura!)})'
+                      : '${AppStrings.ultimaLecturaValida}: sin lecturas registradas',
+                  style: const TextStyle(fontSize: 11, color: AppColors.textoSecundario),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -154,7 +206,10 @@ class _ReadingsGrid extends StatelessWidget {
       (Icons.water_drop_outlined, AppColors.chartHumedad,
           '${nodo.humedad.toStringAsFixed(1)}%', 'Humedad'),
       (Icons.grass_rounded, AppColors.chartHumedadGrano,
-          '${nodo.humedadGrano.toStringAsFixed(1)}%', 'H. Grano'),
+          nodo.loteActivoId != null || nodo.humedadGrano > 0
+              ? '${nodo.humedadGrano.toStringAsFixed(1)}%'
+              : '—',
+          'H. Grano'),
     ];
 
     return GridView.count(

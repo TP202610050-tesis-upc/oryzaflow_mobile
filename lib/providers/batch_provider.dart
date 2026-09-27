@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import '../core/network/api_error.dart';
 import '../models/batch_model.dart';
 import '../models/drying_profile_model.dart';
+import '../models/manual_reading_model.dart';
 import '../models/node_model.dart';
+import '../models/pair_model.dart';
 import '../models/sensor_reading_model.dart';
 import '../models/silo_model.dart';
 import '../models/variety_model.dart';
@@ -28,8 +31,11 @@ class BatchProvider extends ChangeNotifier {
   List<VarietyModel> _variedades = [];
   List<DryingProfileModel> _perfiles = [];
   List<NodeModel> _nodos = [];
+  List<ManualReadingModel> _lecturasManuales = [];
+  PairsModel? _pares;
   bool _cargando = false;
   bool _cargandoLecturas = false;
+  bool _cargandoPares = false;
   bool _procesando = false;
   String? _error;
 
@@ -40,8 +46,11 @@ class BatchProvider extends ChangeNotifier {
   List<VarietyModel> get variedades => _variedades;
   List<DryingProfileModel> get perfiles => _perfiles;
   List<NodeModel> get nodos => _nodos;
+  List<ManualReadingModel> get lecturasManuales => _lecturasManuales;
+  PairsModel? get pares => _pares;
   bool get estaCargando => _cargando;
   bool get estaCargandoLecturas => _cargandoLecturas;
+  bool get estaCargandoPares => _cargandoPares;
   bool get estaProcesando => _procesando;
   String? get error => _error;
 
@@ -56,7 +65,7 @@ class BatchProvider extends ChangeNotifier {
     try {
       _lotes = List.of(await _batchRepo.obtenerLotes());
     } catch (e) {
-      _error = e.toString();
+      _error = apiErrorMessage(e);
     } finally {
       _cargando = false;
       notifyListeners();
@@ -69,11 +78,20 @@ class BatchProvider extends ChangeNotifier {
     try {
       _loteSeleccionado = await _batchRepo.obtenerLotePorId(id);
     } catch (e) {
-      _error = e.toString();
+      _error = apiErrorMessage(e);
     } finally {
       _cargando = false;
       notifyListeners();
     }
+  }
+
+  /// Refresca solo el lote (estimación, marca "por verificar", alertas) sin pasar por el estado de carga.
+  Future<void> refrescarLote(String id) async {
+    try {
+      _loteSeleccionado = await _batchRepo.obtenerLotePorId(id);
+      _actualizarLoteEnLista(_loteSeleccionado!);
+      notifyListeners();
+    } catch (_) {}
   }
 
   Future<void> cargarLecturas(String loteId) async {
@@ -85,7 +103,7 @@ class BatchProvider extends ChangeNotifier {
       _lecturas = await _batchRepo.obtenerLecturasLote(loteId,
           desde: desde, hasta: hasta);
     } catch (e) {
-      _error = e.toString();
+      _error = apiErrorMessage(e);
     } finally {
       _cargandoLecturas = false;
       notifyListeners();
@@ -107,7 +125,7 @@ class BatchProvider extends ChangeNotifier {
       _perfiles = r[2] as List<DryingProfileModel>;
       _nodos = r[3] as List<NodeModel>;
     } catch (e) {
-      _error = e.toString();
+      _error = apiErrorMessage(e);
     } finally {
       _cargando = false;
       notifyListeners();
@@ -123,7 +141,7 @@ class BatchProvider extends ChangeNotifier {
       notifyListeners();
       return nuevo;
     } catch (e) {
-      _error = e.toString();
+      _error = apiErrorMessage(e);
       return null;
     } finally {
       _procesando = false;
@@ -140,7 +158,7 @@ class BatchProvider extends ChangeNotifier {
       if (_loteSeleccionado?.id == id) _loteSeleccionado = updated;
       return true;
     } catch (e) {
-      _error = e.toString();
+      _error = apiErrorMessage(e);
       return false;
     } finally {
       _procesando = false;
@@ -157,7 +175,7 @@ class BatchProvider extends ChangeNotifier {
       if (_loteSeleccionado?.id == id) _loteSeleccionado = updated;
       return true;
     } catch (e) {
-      _error = e.toString();
+      _error = apiErrorMessage(e);
       return false;
     } finally {
       _procesando = false;
@@ -173,8 +191,48 @@ class BatchProvider extends ChangeNotifier {
       await _batchRepo.registrarVolteo(id);
       return true;
     } catch (e) {
-      _error = e.toString();
+      _error = apiErrorMessage(e);
       return false;
+    } finally {
+      _procesando = false;
+      notifyListeners();
+    }
+  }
+
+  // ---- Lecturas manuales del medidor y pares (HU-013, CA-013-01/02) ----
+
+  Future<void> cargarPares(String loteId) async {
+    _cargandoPares = true;
+    notifyListeners();
+    try {
+      final r = await Future.wait([
+        _batchRepo.obtenerPares(loteId),
+        _batchRepo.obtenerLecturasManuales(loteId),
+      ]);
+      _pares = r[0] as PairsModel;
+      _lecturasManuales = r[1] as List<ManualReadingModel>;
+    } catch (e) {
+      _error = apiErrorMessage(e);
+    } finally {
+      _cargandoPares = false;
+      notifyListeners();
+    }
+  }
+
+  /// Registra la lectura del PM-410 y recarga pares y lote (la marca "por verificar" la decide el backend).
+  Future<ManualReadingModel?> registrarLecturaManual(
+      String loteId, ManualReadingDraft lectura) async {
+    _procesando = true;
+    _error = null;
+    notifyListeners();
+    try {
+      final creada = await _batchRepo.registrarLecturaManual(loteId, lectura);
+      await cargarPares(loteId);
+      await refrescarLote(loteId);
+      return creada;
+    } catch (e) {
+      _error = apiErrorMessage(e);
+      return null;
     } finally {
       _procesando = false;
       notifyListeners();

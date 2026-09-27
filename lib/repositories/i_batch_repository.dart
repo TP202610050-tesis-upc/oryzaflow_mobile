@@ -1,4 +1,6 @@
 import '../models/batch_model.dart';
+import '../models/manual_reading_model.dart';
+import '../models/pair_model.dart';
 import '../models/sensor_reading_model.dart';
 import '../models/volteo_model.dart';
 import '../core/enums/batch_status.dart';
@@ -19,4 +21,9 @@ abstract class IBatchRepository {
     required DateTime desde,
     required DateTime hasta,
   });
+
+  /// Lecturas manuales del medidor PM-410 (F7, HU-013): #49/#50/#51.
+  Future<ManualReadingModel> registrarLecturaManual(String loteId, ManualReadingDraft lectura);
+  Future<List<ManualReadingModel>> obtenerLecturasManuales(String loteId);
+  Future<PairsModel> obtenerPares(String loteId);
 }

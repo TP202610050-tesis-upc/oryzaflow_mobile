@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import '../core/network/api_error.dart';
 import '../models/alert_model.dart';
 import '../repositories/i_alert_repository.dart';
 
@@ -33,7 +34,7 @@ class AlertProvider extends ChangeNotifier {
     try {
       _alertas = await _repositorio.obtenerAlertas();
     } catch (e) {
-      _error = e.toString();
+      _error = apiErrorMessage(e);
     } finally {
       _cargando = false;
       notifyListeners();
@@ -70,7 +71,7 @@ class AlertProvider extends ChangeNotifier {
       try {
         await _repositorio.eliminarAlerta(id);
       } catch (e) {
-        _error = e.toString();
+        _error = apiErrorMessage(e);
       }
     });
     return true;
@@ -95,7 +96,7 @@ class AlertProvider extends ChangeNotifier {
       await _repositorio.marcarTodasComoLeidas();
       _alertas = _alertas.map((a) => a.copyWith(leida: true)).toList();
     } catch (e) {
-      _error = e.toString();
+      _error = apiErrorMessage(e);
     } finally {
       _procesando = false;
       notifyListeners();

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/network/api_error.dart';
 import '../models/esp32_config_model.dart';
 import '../models/node_model.dart';
 import '../models/sensor_reading_model.dart';
@@ -35,7 +36,7 @@ class MonitoringProvider extends ChangeNotifier {
     try {
       _nodos = await _repositorio.obtenerNodos();
     } catch (e) {
-      _error = e.toString();
+      _error = apiErrorMessage(e);
     } finally {
       _cargando = false;
       notifyListeners();
@@ -48,7 +49,7 @@ class MonitoringProvider extends ChangeNotifier {
     try {
       _nodoSeleccionado = await _repositorio.obtenerNodoPorId(id);
     } catch (e) {
-      _error = e.toString();
+      _error = apiErrorMessage(e);
     } finally {
       _cargando = false;
       notifyListeners();
@@ -64,7 +65,7 @@ class MonitoringProvider extends ChangeNotifier {
       _lecturas = await _repositorio.obtenerLecturas(nodoId,
           desde: desde, hasta: hasta);
     } catch (e) {
-      _error = e.toString();
+      _error = apiErrorMessage(e);
     } finally {
       _cargandoLecturas = false;
       notifyListeners();
@@ -77,7 +78,7 @@ class MonitoringProvider extends ChangeNotifier {
     try {
       _config = await _repositorio.obtenerConfiguracion(nodoId);
     } catch (e) {
-      _error = e.toString();
+      _error = apiErrorMessage(e);
     } finally {
       _cargando = false;
       notifyListeners();
@@ -91,7 +92,7 @@ class MonitoringProvider extends ChangeNotifier {
       _config = await _repositorio.actualizarConfiguracion(config);
       return true;
     } catch (e) {
-      _error = e.toString();
+      _error = apiErrorMessage(e);
       return false;
     } finally {
       _procesando = false;

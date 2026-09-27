@@ -110,6 +110,25 @@ class AppStrings {
   static const String loteCompletado = 'Lote completado';
   static const String loteCancelado = 'Lote cancelado';
   static const String lotePendiente = 'Pendiente';
+  // Reglas de excepción (Cuaderno 4, 27/09/2026). Textos de los CA: no parafrasear.
+  static const String destinoComercial = 'Destino comercial';
+  static const String destinoComercialObligatorio =
+      'Indique si el lote es para saco de marca o genérico para fijar la humedad meta'; // CA-006-02
+  static const String datoDesactualizado =
+      'Dato desactualizado — verifique con el medidor'; // CA-001-02
+  static const String noLlegaraHoy = 'No llegará a la meta hoy'; // CA-003-02
+  static const String porVerificar = 'Por verificar'; // CA-013-02
+  static const String estimacionActual = 'Estimación';
+  static const String humedadEstimada = 'Humedad estimada del grano';
+  static const String sinEstimacion = 'Sin estimación aún: el nodo no ha publicado con el lote activo';
+  static const String finEstimado = 'Fin estimado';
+  static const String lecturasMedidor = 'Lecturas del medidor';
+  static const String registrarLectura = 'Registrar lectura';
+  static const String lecturaRegistrada = 'Lectura registrada';
+  static const String mantada = 'Mantada';
+  static const String sinLecturasManuales = 'Aún no hay lecturas del medidor para este lote';
+  static const String curvaSinDatos =
+      'Aún no hay datos suficientes para la curva'; // CA-009-02
 
   // Monitoring
   static const String monitoreo = 'Monitoreo';
@@ -122,6 +141,8 @@ class AppStrings {
   static const String puerto = 'Puerto';
   static const String intervaloEnvio = 'Intervalo de envío (s)';
   static const String calibracion = 'Calibración de sensores';
+  static const String sinDatosClima = 'Sin datos recientes del clima'; // CA-002-02
+  static const String ultimaLecturaValida = 'Última lectura válida';
 
   // Sensors
   static const String temperatura = 'Temperatura';
@@ -143,6 +164,7 @@ class AppStrings {
   static const String formatoPdf = 'PDF';
   static const String formatoCsv = 'CSV';
   static const String exportar = 'Exportar';
+  static const String sinLotesEnPeriodo = 'No hay lotes en ese periodo'; // CA-011-02
   static const String eficienciaEnergetica = 'Eficiencia Energética';
   static const String totalKgProcesados = 'Total Kg Procesados';
   static const String tiempoPromedio = 'Tiempo Promedio';

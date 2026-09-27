@@ -26,6 +26,8 @@ class RouteNames {
   static const String nuevoLote = '/lotes/nuevo';
   static const String detalleLote = '/lotes/:loteId';
   static String detalleLotePath(String id) => '/lotes/$id';
+  static const String lecturasLote = '/lotes/:loteId/lecturas';
+  static String lecturasLotePath(String id) => '/lotes/$id/lecturas';
 
   // Módulo 5
   static const String monitoreo = '/monitoreo';

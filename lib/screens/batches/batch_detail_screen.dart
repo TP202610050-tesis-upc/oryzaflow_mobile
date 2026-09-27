@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_dimensions.dart';
 import '../../core/constants/app_strings.dart';
 import '../../core/di/injection_container.dart';
 import '../../core/enums/batch_status.dart';
+import '../../core/enums/producto_destino.dart';
+import '../../core/router/route_names.dart';
 import '../../core/utils/date_formatter.dart';
 import '../../core/utils/sensor_utils.dart';
+import '../../models/batch_estimation_model.dart';
 import '../../models/batch_model.dart';
 import '../../providers/batch_provider.dart';
 import '../../widgets/common/confirmation_dialog.dart';
@@ -49,7 +53,7 @@ class _BatchDetailView extends StatelessWidget {
             body: const ShimmerList(),
           );
         }
-        if (prov.error != null) {
+        if (prov.error != null && prov.loteSeleccionado == null) {
           return Scaffold(
             appBar: const OryzaFlowAppBar(
                 titulo: AppStrings.detalleLote, mostrarBotonAtras: true),
@@ -85,6 +89,10 @@ class _BatchDetailView extends StatelessWidget {
               children: [
                 _StatusBanner(lote: lote),
                 const SizedBox(height: AppDimensions.paddingM),
+                if (lote.estado == BatchStatus.enProceso) ...[
+                  _EstimacionSection(lote: lote),
+                  const SizedBox(height: AppDimensions.paddingM),
+                ],
                 _InfoSection(lote: lote),
                 const SizedBox(height: AppDimensions.paddingM),
                 _ControlSection(lote: lote, prov: prov),
@@ -143,6 +151,10 @@ class _StatusBanner extends StatelessWidget {
                         fontWeight: FontWeight.w700,
                         fontSize: 16,
                         color: color)),
+                if (lote.alertasNoLeidas > 0)
+                  Text('${lote.alertasNoLeidas} alerta(s) sin atender',
+                      style: const TextStyle(
+                          fontSize: 12, color: AppColors.advertencia)),
               ],
             ),
           ),
@@ -165,6 +177,245 @@ class _StatusBanner extends StatelessWidget {
   }
 }
 
+/// HU-001 (CA-001-02), HU-003 (CA-003-01/02) y HU-013 (CA-013-02): humedad estimada con su hora, etiqueta de
+/// dato desactualizado, horas restantes y hora proyectada de fin, «No llegará a la meta hoy» y «Por verificar».
+/// Las banderas las calcula el backend; la app no recalcula la antigüedad.
+class _EstimacionSection extends StatelessWidget {
+  final BatchModel lote;
+  const _EstimacionSection({required this.lote});
+
+  @override
+  Widget build(BuildContext context) {
+    final est = lote.estimacion;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(AppDimensions.paddingM),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Text(AppStrings.estimacionActual,
+                    style: Theme.of(context).textTheme.titleSmall),
+                const Spacer(),
+                if (lote.porVerificar) _Chip(
+                  texto: lote.ultimaDiferenciaPp != null
+                      ? '${AppStrings.porVerificar} (Δ ${lote.ultimaDiferenciaPp!.abs().toStringAsFixed(1)} pp)'
+                      : AppStrings.porVerificar,
+                  color: AppColors.advertencia,
+                  icono: Icons.rule_rounded,
+                ),
+              ],
+            ),
+            const SizedBox(height: AppDimensions.paddingM),
+            if (est == null)
+              const Text(AppStrings.sinEstimacion,
+                  style: TextStyle(fontSize: 13, color: AppColors.textoSecundario))
+            else
+              _EstimacionBody(est: est, meta: lote.metaDeclarada),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _EstimacionBody extends StatelessWidget {
+  final BatchEstimationModel est;
+  final double? meta;
+  const _EstimacionBody({required this.est, required this.meta});
+
+  @override
+  Widget build(BuildContext context) {
+    final stale = est.desactualizada;
+    final valorColor = stale ? AppColors.textoSecundario : AppColors.chartHumedadGrano;
+    final hum = est.humedadGrano;
+    final metaLote = meta;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Text(hum != null ? '${hum.toStringAsFixed(1)} %' : '—',
+                style: TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.w700,
+                    color: valorColor,
+                    decoration: stale ? TextDecoration.lineThrough : null,
+                    decorationColor: AppColors.textoSecundario)),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(AppStrings.humedadEstimada,
+                      style: TextStyle(fontSize: 12, color: AppColors.textoSecundario)),
+                  Text(
+                    // CA-001-02: siempre con su hora; si es viejo, "último valor conocido", no actual.
+                    stale
+                        ? 'Último valor conocido: ${DateFormatter.relativo(est.ts)}'
+                        : 'Actualizado ${DateFormatter.hora(est.ts)}'
+                            '${est.segmento != null ? ' · segmento ${est.segmento}' : ''}',
+                    style: const TextStyle(fontSize: 12, color: AppColors.textoSecundario),
+                  ),
+                  if (meta != null)
+                    Text('Meta: ${meta!.toStringAsFixed(1)} %',
+                        style: const TextStyle(fontSize: 12, color: AppColors.textoSecundario)),
+                ],
+              ),
+            ),
+          ],
+        ),
+        if (stale) ...[
+          const SizedBox(height: 10),
+          _Aviso(
+            texto: AppStrings.datoDesactualizado,
+            detalle: 'Sin publicaciones nuevas desde ${DateFormatter.fechaHora(est.ts)} '
+                '(más de ${(est.umbralDesactualizadoSegundos / 60).round()} min)',
+            color: AppColors.advertencia,
+            icono: Icons.history_toggle_off_rounded,
+          ),
+        ],
+        const SizedBox(height: 12),
+        // CA-003-01 / CA-003-02: horas restantes y hora proyectada, o "No llegará a la meta hoy".
+        if (est.noLlegaHoy)
+          _Aviso(
+            texto: AppStrings.noLlegaraHoy,
+            detalle: est.restante != null
+                ? 'Faltan ${DateFormatter.duracion(est.restante!)} de sol; la jornada termina a las ${est.finJornada}. '
+                    'Cubra el lote por el sereno y continúe mañana.'
+                : 'La jornada termina a las ${est.finJornada}.',
+            color: AppColors.informacion,
+            icono: Icons.nights_stay_rounded,
+          )
+        else if (est.tieneProyeccion)
+          Row(
+            children: [
+              Expanded(
+                child: _Dato(
+                  label: 'Tiempo restante',
+                  valor: 'Faltan ${DateFormatter.duracion(est.restante!)}',
+                  icono: Icons.timer_outlined,
+                  atenuado: stale,
+                ),
+              ),
+              Expanded(
+                child: _Dato(
+                  label: AppStrings.finEstimado,
+                  valor: DateFormatter.hora(est.finEstimado!),
+                  icono: Icons.flag_outlined,
+                  atenuado: stale,
+                ),
+              ),
+            ],
+          )
+        else
+          _Dato(
+            label: 'Tiempo restante',
+            valor: (hum != null && metaLote != null && hum <= metaLote + 0.5)
+                ? 'Meta alcanzada'
+                : 'Sin proyección (meta no alcanzable con el aire actual)',
+            icono: Icons.timer_off_outlined,
+            atenuado: stale,
+          ),
+      ],
+    );
+  }
+}
+
+class _Aviso extends StatelessWidget {
+  final String texto;
+  final String detalle;
+  final Color color;
+  final IconData icono;
+  const _Aviso({required this.texto, required this.detalle, required this.color, required this.icono});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: color.withAlpha(18),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withAlpha(90)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icono, size: 18, color: color),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(texto, style: TextStyle(fontWeight: FontWeight.w700, color: color, fontSize: 13)),
+                const SizedBox(height: 2),
+                Text(detalle, style: const TextStyle(fontSize: 11, color: AppColors.textoSecundario)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Dato extends StatelessWidget {
+  final String label;
+  final String valor;
+  final IconData icono;
+  final bool atenuado;
+  const _Dato({required this.label, required this.valor, required this.icono, this.atenuado = false});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = atenuado ? AppColors.textoSecundario : AppColors.textoPrimario;
+    return Row(
+      children: [
+        Icon(icono, size: 18, color: AppColors.textoSecundario),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label, style: const TextStyle(fontSize: 11, color: AppColors.textoSecundario)),
+              Text(valor, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: color)),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _Chip extends StatelessWidget {
+  final String texto;
+  final Color color;
+  final IconData icono;
+  const _Chip({required this.texto, required this.color, required this.icono});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withAlpha(20),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withAlpha(90)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icono, size: 14, color: color),
+          const SizedBox(width: 4),
+          Text(texto, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: color)),
+        ],
+      ),
+    );
+  }
+}
+
 class _InfoSection extends StatelessWidget {
   final BatchModel lote;
   const _InfoSection({required this.lote});
@@ -181,6 +432,12 @@ class _InfoSection extends StatelessWidget {
                 style: Theme.of(context).textTheme.titleSmall),
             const SizedBox(height: AppDimensions.paddingM),
             _Row('Variedad', lote.variedadNombre),
+            if (lote.producto != null)
+              _Row(AppStrings.destinoComercial, lote.producto!.displayName),
+            if (lote.metaDeclarada != null)
+              _Row('Meta declarada', '${lote.metaDeclarada!.toStringAsFixed(1)} %'),
+            if (lote.duenoCodigo != null && lote.duenoCodigo!.isNotEmpty)
+              _Row('Dueño', lote.duenoCodigo!),
             _Row('Silo', lote.siloNombre),
             _Row('Nodo', lote.nodoNombre),
             _Row('Perfil de secado', lote.perfilSecadoNombre),
@@ -241,10 +498,8 @@ class _ControlSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (lote.estado == BatchStatus.completado ||
-        lote.estado == BatchStatus.cancelado) {
-      return const SizedBox();
-    }
+    final cerrado = lote.estado == BatchStatus.completado ||
+        lote.estado == BatchStatus.cancelado;
 
     return Card(
       child: Padding(
@@ -313,6 +568,18 @@ class _ControlSection extends StatelessWidget {
                       prov.estaProcesando ? null : () => _confirmarVolteo(context),
                   icon: const Icon(Icons.autorenew_rounded),
                   label: const Text(AppStrings.registrarVolteo),
+                ),
+              ),
+            ],
+            // HU-013: lecturas del medidor y pares (también en lotes cerrados: las planillas se cargan después).
+            if (lote.estado != BatchStatus.pendiente) ...[
+              const SizedBox(height: AppDimensions.paddingS),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => context.push(RouteNames.lecturasLotePath(lote.id)),
+                  icon: const Icon(Icons.straighten_rounded),
+                  label: Text(cerrado ? '${AppStrings.lecturasMedidor} (historial)' : AppStrings.lecturasMedidor),
                 ),
               ),
             ],

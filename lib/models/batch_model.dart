@@ -1,6 +1,8 @@
 import 'package:equatable/equatable.dart';
 import '../core/enums/batch_status.dart';
+import '../core/enums/producto_destino.dart';
 import '../core/network/json_mappers.dart';
+import 'batch_estimation_model.dart';
 
 class BatchModel extends Equatable {
   final String id;
@@ -23,6 +25,19 @@ class BatchModel extends Equatable {
   final String operadorId;
   final String operadorNombre;
 
+  // Campos de campaña (F7) y reglas de excepción (Cuaderno 4, 27/09/2026).
+  /// Destino comercial: obligatorio al registrar (CA-006-02).
+  final ProductoDestino? producto;
+  final double? metaDeclarada;
+  /// Código del dueño del grano (anexo A del protocolo); "dueño" en la lista de lotes (HU-015).
+  final String? duenoCodigo;
+  /// CA-013-02: la estimación difiere del medidor > 1,0 pp; no se da el lote por listo solo con ella.
+  final bool porVerificar;
+  final double? ultimaDiferenciaPp;
+  final int alertasNoLeidas;
+  /// HU-001/HU-003: última estimación del nodo con su antigüedad y proyección (null si no está en proceso).
+  final BatchEstimationModel? estimacion;
+
   const BatchModel({
     required this.id,
     required this.codigo,
@@ -43,6 +58,13 @@ class BatchModel extends Equatable {
     this.humedadFinal,
     this.fechaInicio,
     this.fechaFin,
+    this.producto,
+    this.metaDeclarada,
+    this.duenoCodigo,
+    this.porVerificar = false,
+    this.ultimaDiferenciaPp,
+    this.alertasNoLeidas = 0,
+    this.estimacion,
   });
 
   bool get estaActivo => estado == BatchStatus.enProceso;
@@ -50,6 +72,10 @@ class BatchModel extends Equatable {
       fechaFin != null && fechaInicio != null
           ? fechaFin!.difference(fechaInicio!)
           : null;
+
+  /// Dueño del grano si se registró; si no, el operador que creó el lote.
+  String get dueno =>
+      (duenoCodigo != null && duenoCodigo!.isNotEmpty) ? duenoCodigo! : operadorNombre;
 
   factory BatchModel.fromJson(Map<String, dynamic> json) => BatchModel(
         id: json['id'].toString(),
@@ -71,9 +97,19 @@ class BatchModel extends Equatable {
         fechaFin: parseFechaNullable(json['fechaFin']),
         operadorId: json['operadorId'].toString(),
         operadorNombre: json['operadorNombre'] as String? ?? '',
+        producto: productoDestinoFromApi(json['producto'] as String?),
+        metaDeclarada: parseDoubleNullable(json['metaDeclarada']),
+        duenoCodigo: json['duenoCodigo'] as String?,
+        porVerificar: json['porVerificar'] as bool? ?? false,
+        ultimaDiferenciaPp: parseDoubleNullable(json['ultimaDiferenciaPp']),
+        alertasNoLeidas: (json['alertasNoLeidas'] as num?)?.toInt() ?? 0,
+        estimacion: json['estimacion'] is Map<String, dynamic>
+            ? BatchEstimationModel.fromJson(json['estimacion'] as Map<String, dynamic>)
+            : null,
       );
 
   /// Payload de creación (CreateBatchResource). El operador lo toma el backend del token.
+  /// `producto` es obligatorio en el backend (CA-006-02).
   Map<String, dynamic> toCreateJson() => {
         'siloId': int.tryParse(siloId),
         'variedadId': int.tryParse(variedadId),
@@ -81,6 +117,9 @@ class BatchModel extends Equatable {
         'nodoId': int.tryParse(nodoId),
         'pesoKg': pesoKg,
         'humedadInicial': humedadInicial,
+        if (producto != null) 'producto': productoDestinoToApi(producto!),
+        if (metaDeclarada != null) 'metaDeclarada': metaDeclarada,
+        if (duenoCodigo != null && duenoCodigo!.isNotEmpty) 'duenoCodigo': duenoCodigo,
       };
 
   BatchModel copyWith({
@@ -109,8 +148,15 @@ class BatchModel extends Equatable {
         fechaFin: fechaFin ?? this.fechaFin,
         operadorId: operadorId,
         operadorNombre: operadorNombre,
+        producto: producto,
+        metaDeclarada: metaDeclarada,
+        duenoCodigo: duenoCodigo,
+        porVerificar: porVerificar,
+        ultimaDiferenciaPp: ultimaDiferenciaPp,
+        alertasNoLeidas: alertasNoLeidas,
+        estimacion: estimacion,
       );
 
   @override
-  List<Object?> get props => [id, estado, humedadFinal];
+  List<Object?> get props => [id, estado, humedadFinal, porVerificar, estimacion];
 }

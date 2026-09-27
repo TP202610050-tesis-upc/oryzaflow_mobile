@@ -11,6 +11,12 @@ class AlertModel extends Equatable {
   final DateTime timestamp;
   final bool leida;
   final String? loteId;
+  // CA-016-01 (parte mínima): tipo del motor, hora y usuario de atención, minutos emisión → atención.
+  final String? tipo;
+  final String? batchId;
+  final DateTime? leidaEn;
+  final String? leidaPor;
+  final int? minutosAtencion;
 
   const AlertModel({
     required this.id,
@@ -21,6 +27,11 @@ class AlertModel extends Equatable {
     required this.timestamp,
     required this.leida,
     this.loteId,
+    this.tipo,
+    this.batchId,
+    this.leidaEn,
+    this.leidaPor,
+    this.minutosAtencion,
   });
 
   factory AlertModel.fromJson(Map<String, dynamic> json) => AlertModel(
@@ -32,6 +43,11 @@ class AlertModel extends Equatable {
         timestamp: parseFecha(json['timestamp']),
         leida: json['leida'] as bool? ?? false,
         loteId: json['loteId'] as String?,
+        tipo: json['tipo'] as String?,
+        batchId: json['batchId']?.toString(),
+        leidaEn: parseFechaNullable(json['leidaEn']),
+        leidaPor: json['leidaPor'] as String?,
+        minutosAtencion: (json['minutosAtencion'] as num?)?.toInt(),
       );
 
   AlertModel copyWith({bool? leida}) => AlertModel(
@@ -43,6 +59,11 @@ class AlertModel extends Equatable {
         timestamp: timestamp,
         leida: leida ?? this.leida,
         loteId: loteId,
+        tipo: tipo,
+        batchId: batchId,
+        leidaEn: leidaEn,
+        leidaPor: leidaPor,
+        minutosAtencion: minutosAtencion,
       );
 
   @override
