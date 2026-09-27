@@ -78,7 +78,7 @@ class _BatchesViewState extends State<_BatchesView>
       body: Consumer<BatchProvider>(
         builder: (_, prov, __) {
           if (prov.estaCargando) return const ShimmerList();
-          if (prov.error != null) {
+          if (prov.error != null && prov.lotes.isEmpty) {
             return ErrorStateWidget(
                 mensaje: prov.error, onReintentar: prov.cargarLotes);
           }
@@ -136,6 +136,7 @@ class _LotesList extends StatelessWidget {
   }
 }
 
+/// HU-015 (CA-015-01): cada lote muestra dueño, estado, humedad estimada, tiempo restante y alertas no atendidas.
 class _BatchCard extends StatelessWidget {
   final BatchModel lote;
   const _BatchCard({required this.lote});
@@ -177,22 +178,47 @@ class _BatchCard extends StatelessWidget {
                             style: const TextStyle(
                                 fontSize: 12,
                                 color: AppColors.textoSecundario)),
+                        Text('Dueño: ${lote.dueno}',
+                            style: const TextStyle(
+                                fontSize: 12,
+                                color: AppColors.textoSecundario)),
                       ],
                     ),
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: color.withAlpha(20),
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: color.withAlpha(60)),
-                    ),
-                    child: Text(lote.estado.displayName,
-                        style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: color)),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: color.withAlpha(20),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: color.withAlpha(60)),
+                        ),
+                        child: Text(lote.estado.displayName,
+                            style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: color)),
+                      ),
+                      if (lote.alertasNoLeidas > 0) ...[
+                        const SizedBox(height: 4),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.notifications_active_rounded,
+                                size: 12, color: AppColors.advertencia),
+                            const SizedBox(width: 2),
+                            Text('${lote.alertasNoLeidas}',
+                                style: const TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.advertencia)),
+                          ],
+                        ),
+                      ],
+                    ],
                   ),
                 ],
               ),
@@ -215,6 +241,10 @@ class _BatchCard extends StatelessWidget {
                   ),
                 ],
               ),
+              if (lote.estado == BatchStatus.enProceso) ...[
+                const SizedBox(height: 8),
+                _EstimacionRow(lote: lote),
+              ],
             ],
           ),
         ),
@@ -223,21 +253,74 @@ class _BatchCard extends StatelessWidget {
   }
 }
 
-class _InfoChip extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  const _InfoChip({required this.icon, required this.label});
+/// Humedad estimada y tiempo restante del lote en proceso (con las banderas del backend).
+class _EstimacionRow extends StatelessWidget {
+  final BatchModel lote;
+  const _EstimacionRow({required this.lote});
 
   @override
   Widget build(BuildContext context) {
+    final est = lote.estimacion;
+    if (est == null) {
+      return const Text('Sin estimación aún',
+          style: TextStyle(fontSize: 11, color: AppColors.textoSecundario));
+    }
+    final stale = est.desactualizada;
+    final humColor = stale ? AppColors.textoSecundario : AppColors.chartHumedadGrano;
+    final restante = est.noLlegaHoy
+        ? AppStrings.noLlegaraHoy
+        : est.restante != null
+            ? 'Faltan ${DateFormatter.duracion(est.restante!)}'
+            : '—';
+    return Wrap(
+      spacing: 8,
+      runSpacing: 4,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        _InfoChip(
+            icon: Icons.grass_rounded,
+            color: humColor,
+            label: est.humedadGrano != null
+                ? 'Est. ${est.humedadGrano!.toStringAsFixed(1)}% (${DateFormatter.hora(est.ts)})'
+                : 'Est. —'),
+        _InfoChip(
+            icon: est.noLlegaHoy ? Icons.nights_stay_rounded : Icons.timer_outlined,
+            color: est.noLlegaHoy ? AppColors.informacion : null,
+            label: restante),
+        if (stale)
+          const _InfoChip(
+              icon: Icons.history_toggle_off_rounded,
+              color: AppColors.advertencia,
+              label: AppStrings.datoDesactualizado),
+        if (lote.porVerificar)
+          const _InfoChip(
+              icon: Icons.rule_rounded,
+              color: AppColors.advertencia,
+              label: AppStrings.porVerificar),
+      ],
+    );
+  }
+}
+
+class _InfoChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color? color;
+  const _InfoChip({required this.icon, required this.label, this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = color ?? AppColors.textoSecundario;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 12, color: AppColors.textoSecundario),
+        Icon(icon, size: 12, color: c),
         const SizedBox(width: 3),
         Text(label,
-            style: const TextStyle(
-                fontSize: 11, color: AppColors.textoSecundario)),
+            style: TextStyle(
+                fontSize: 11,
+                color: c,
+                fontWeight: color != null ? FontWeight.w600 : FontWeight.normal)),
       ],
     );
   }

@@ -13,6 +13,7 @@ import '../../screens/auth/recover_password_screen.dart';
 import '../../screens/auth/splash_screen.dart';
 import '../../screens/batches/batch_detail_screen.dart';
 import '../../screens/batches/batches_list_screen.dart';
+import '../../screens/batches/manual_readings_screen.dart';
 import '../../screens/batches/new_batch_screen.dart';
 import '../../screens/dashboard/alerts_screen.dart';
 import '../../screens/dashboard/dashboard_screen.dart';
@@ -99,7 +100,13 @@ class AppRouter {
               builder: (_, __) => const BatchesListScreen(),
               routes: [
                 GoRoute(path: 'nuevo', builder: (_, __) => const NewBatchScreen()),
-                GoRoute(path: ':loteId', builder: (_, state) => BatchDetailScreen(loteId: state.pathParameters['loteId']!)),
+                GoRoute(
+                  path: ':loteId',
+                  builder: (_, state) => BatchDetailScreen(loteId: state.pathParameters['loteId']!),
+                  routes: [
+                    GoRoute(path: 'lecturas', builder: (_, state) => ManualReadingsScreen(loteId: state.pathParameters['loteId']!)),
+                  ],
+                ),
               ],
             ),
             // Monitoreo
