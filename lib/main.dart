@@ -35,7 +35,16 @@ Future<void> main() async {
   final push = sl<PushService>();
   push.habilitadas = sl<NotificationsProvider>().activadas;
   await push.init();
-  sl<AuthProvider>().alIniciarSesion = push.registrar;
+  sl<AuthProvider>().alIniciarSesion = () async {
+    // HU-012: pedir el permiso del SO al entrar (si el usuario no apagó las notificaciones) y registrar el token.
+    final notif = sl<NotificationsProvider>();
+    if (notif.preferenciaActivada && !notif.permisoConcedido) {
+      await notif.setActivadas(true); // solicita el permiso; su gancho registra el token si se concede
+    } else {
+      push.habilitadas = notif.activadas;
+      await push.registrar();
+    }
+  };
   sl<AuthProvider>().alCerrarSesion = push.desregistrar;
   sl<NotificationsProvider>().alCambiar = (activadas) async {
     push.habilitadas = activadas;

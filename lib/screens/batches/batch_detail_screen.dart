@@ -212,7 +212,7 @@ class _EstimacionSection extends StatelessWidget {
               const Text(AppStrings.sinEstimacion,
                   style: TextStyle(fontSize: 13, color: AppColors.textoSecundario))
             else
-              _EstimacionBody(est: est, meta: lote.metaDeclarada),
+              _EstimacionBody(est: est, meta: lote.metaObjetivo ?? lote.metaDeclarada),
           ],
         ),
       ),
@@ -435,7 +435,9 @@ class _InfoSection extends StatelessWidget {
             if (lote.producto != null)
               _Row(AppStrings.destinoComercial, lote.producto!.displayName),
             if (lote.metaDeclarada != null)
-              _Row('Meta declarada', '${lote.metaDeclarada!.toStringAsFixed(1)} %'),
+              _Row('Meta declarada', '${lote.metaDeclarada!.toStringAsFixed(1)} %')
+            else if (lote.metaObjetivo != null)
+              _Row('Meta (perfil)', '${lote.metaObjetivo!.toStringAsFixed(1)} %'),
             if (lote.duenoCodigo != null && lote.duenoCodigo!.isNotEmpty)
               _Row('Dueño', lote.duenoCodigo!),
             _Row('Silo', lote.siloNombre),

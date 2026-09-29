@@ -29,6 +29,8 @@ class BatchModel extends Equatable {
   /// Destino comercial: obligatorio al registrar (CA-006-02).
   final ProductoDestino? producto;
   final double? metaDeclarada;
+  /// Meta efectiva (% b.h.) que usa el nodo y las alertas: declarada → perfil → valor por defecto del backend.
+  final double? metaObjetivo;
   /// Código del dueño del grano (anexo A del protocolo); "dueño" en la lista de lotes (HU-015).
   final String? duenoCodigo;
   /// CA-013-02: la estimación difiere del medidor > 1,0 pp; no se da el lote por listo solo con ella.
@@ -60,6 +62,7 @@ class BatchModel extends Equatable {
     this.fechaFin,
     this.producto,
     this.metaDeclarada,
+    this.metaObjetivo,
     this.duenoCodigo,
     this.porVerificar = false,
     this.ultimaDiferenciaPp,
@@ -99,6 +102,7 @@ class BatchModel extends Equatable {
         operadorNombre: json['operadorNombre'] as String? ?? '',
         producto: productoDestinoFromApi(json['producto'] as String?),
         metaDeclarada: parseDoubleNullable(json['metaDeclarada']),
+        metaObjetivo: parseDoubleNullable(json['metaObjetivo']),
         duenoCodigo: json['duenoCodigo'] as String?,
         porVerificar: json['porVerificar'] as bool? ?? false,
         ultimaDiferenciaPp: parseDoubleNullable(json['ultimaDiferenciaPp']),
@@ -150,6 +154,7 @@ class BatchModel extends Equatable {
         operadorNombre: operadorNombre,
         producto: producto,
         metaDeclarada: metaDeclarada,
+        metaObjetivo: metaObjetivo,
         duenoCodigo: duenoCodigo,
         porVerificar: porVerificar,
         ultimaDiferenciaPp: ultimaDiferenciaPp,

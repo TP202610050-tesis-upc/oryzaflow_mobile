@@ -32,6 +32,9 @@ class NotificationsProvider extends ChangeNotifier {
   /// y el SO concedió el permiso.
   bool get activadas => _prefActivadas && _permisoConcedido;
   bool get permisoConcedido => _permisoConcedido;
+
+  /// Preferencia guardada por el usuario (true por defecto), sin considerar el permiso del SO.
+  bool get preferenciaActivada => _prefActivadas;
   bool get cargando => _cargando;
 
   /// Lee la preferencia guardada y el estado actual del permiso del SO.
