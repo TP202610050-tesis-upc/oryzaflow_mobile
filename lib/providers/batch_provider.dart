@@ -94,12 +94,18 @@ class BatchProvider extends ChangeNotifier {
     } catch (_) {}
   }
 
+  /// Lecturas para las gráficas del lote: todo su periodo (inicio → cierre, o → ahora si sigue en proceso),
+  /// no una ventana relativa a «ahora»; así un lote cerrado conserva su curva. El backend recorta la ventana
+  /// a [fechaInicio, fechaFin] del lote.
   Future<void> cargarLecturas(String loteId) async {
     _cargandoLecturas = true;
     notifyListeners();
     try {
-      final hasta = DateTime.now();
-      final desde = hasta.subtract(const Duration(hours: 2));
+      final lote = _loteSeleccionado?.id == loteId
+          ? _loteSeleccionado!
+          : await _batchRepo.obtenerLotePorId(loteId);
+      final hasta = lote.fechaFin ?? DateTime.now();
+      final desde = lote.fechaInicio ?? lote.fechaIngreso;
       _lecturas = await _batchRepo.obtenerLecturasLote(loteId,
           desde: desde, hasta: hasta);
     } catch (e) {

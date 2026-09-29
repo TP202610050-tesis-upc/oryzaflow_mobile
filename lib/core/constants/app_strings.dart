@@ -135,6 +135,7 @@ class AppStrings {
   static const String configEsp32 = 'Config. ESP32';
   static const String lecturasEnVivo = 'Lecturas en Vivo';
   static const String ultimasDoceHoras = 'Últimas 2 horas';
+  static const String lecturasDelLote = 'Lecturas del lote';
   static const String volteoManual = 'Volteo manual';
   static const String registrarVolteo = 'Registrar volteo';
   static const String ipAddress = 'Dirección IP';

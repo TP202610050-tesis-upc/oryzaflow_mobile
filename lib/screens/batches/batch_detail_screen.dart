@@ -97,7 +97,7 @@ class _BatchDetailView extends StatelessWidget {
                 const SizedBox(height: AppDimensions.paddingM),
                 _ControlSection(lote: lote, prov: prov),
                 const SizedBox(height: AppDimensions.paddingM),
-                Text(AppStrings.ultimasDoceHoras,
+                Text(AppStrings.lecturasDelLote,
                     style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: AppDimensions.paddingS),
                 ...SensorTipo.values.map((t) => Padding(

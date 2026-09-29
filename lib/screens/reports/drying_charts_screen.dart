@@ -82,7 +82,7 @@ class _ChartsView extends StatelessWidget {
             children: [
               _LoteInfo(lote: lote),
               const SizedBox(height: AppDimensions.paddingM),
-              Text(AppStrings.ultimasDoceHoras,
+              Text(AppStrings.lecturasDelLote,
                   style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: AppDimensions.paddingS),
               if (curvaInsuficiente)
