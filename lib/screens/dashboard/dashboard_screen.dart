@@ -364,9 +364,21 @@ class _AlertaTile extends StatelessWidget {
             style: const TextStyle(fontSize: 13),
             maxLines: 2,
             overflow: TextOverflow.ellipsis),
-        subtitle: Text(
-            '${alerta.nodoNombre} • ${DateFormatter.tiempoTranscurrido(alerta.timestamp)}',
-            style: const TextStyle(fontSize: 11)),
+        subtitle: Text.rich(
+          TextSpan(
+            text:
+                '${alerta.nodoNombre} • ${DateFormatter.tiempoTranscurrido(alerta.timestamp)}',
+            children: [
+              // CA-015-02: reenviada al supervisor por no atenderse a tiempo.
+              if (alerta.escalada)
+                const TextSpan(
+                    text: ' • ${AppStrings.reenviada}',
+                    style: TextStyle(
+                        color: AppColors.critico, fontWeight: FontWeight.w600)),
+            ],
+          ),
+          style: const TextStyle(fontSize: 11),
+        ),
         trailing: alerta.leida
             ? null
             : Container(

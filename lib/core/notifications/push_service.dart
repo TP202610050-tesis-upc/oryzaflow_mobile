@@ -15,7 +15,8 @@ Future<void> oryzaflowBackgroundHandler(RemoteMessage message) async {}
 /// Notificaciones push (HU-012, CONTEXTO §10.3): inicializa Firebase, crea el canal con sonido, muestra en
 /// primer plano las alertas que llegan por FCM y registra/elimina el token del dispositivo en el backend
 /// (`POST/DELETE /notifications/device-tokens`). El backend envía SECADO_TERMINADO, TEMPERATURA_FUERA_RANGO y
-/// SENSOR_DESCONECTADO; FCM conserva el mensaje hasta que el teléfono recupera la red (CA-012-02).
+/// SENSOR_DESCONECTADO y, solo a los supervisores, ESCALAMIENTO_SUPERVISOR (CA-015-02: alerta no atendida en el
+/// tiempo de atención); FCM conserva el mensaje hasta que el teléfono recupera la red (CA-012-02).
 class PushService {
   static const String canalId = 'oryzaflow_alertas';
   static const String canalNombre = 'Alertas de secado';

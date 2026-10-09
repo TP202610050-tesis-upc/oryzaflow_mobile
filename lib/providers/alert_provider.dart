@@ -21,6 +21,9 @@ class AlertProvider extends ChangeNotifier {
   List<AlertModel> get alertas => _alertas;
   List<AlertModel> get noLeidas => _alertas.where((a) => !a.leida).toList();
   int get cantidadNoLeidas => noLeidas.length;
+  // CA-015-02: alertas reenviadas al supervisor por no atenderse a tiempo.
+  List<AlertModel> get escaladas => _alertas.where((a) => a.escalada).toList();
+  int get cantidadEscaladas => escaladas.length;
   bool get estaCargando => _cargando;
   bool get estaProcesando => _procesando;
   String? get error => _error;

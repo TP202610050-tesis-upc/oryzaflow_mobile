@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_dimensions.dart';
 import '../../core/constants/app_strings.dart';
 import '../../core/enums/alert_severity.dart';
@@ -12,6 +13,9 @@ import '../../widgets/common/error_state_widget.dart';
 import '../../widgets/common/loading_shimmer.dart';
 import '../../widgets/common/oryzaflow_app_bar.dart';
 
+/// Filtro de la lista: por severidad o solo las reenviadas al supervisor (CA-015-02).
+enum _Filtro { todas, criticas, advertencias, informacion, reenviadas }
+
 class AlertsScreen extends StatefulWidget {
   const AlertsScreen({super.key});
 
@@ -21,7 +25,15 @@ class AlertsScreen extends StatefulWidget {
 
 class _AlertsScreenState extends State<AlertsScreen>
     with WidgetsBindingObserver {
-  AlertSeverity? _filtroSeveridad;
+  _Filtro _filtro = _Filtro.todas;
+
+  bool _pasa(AlertModel a) => switch (_filtro) {
+        _Filtro.todas => true,
+        _Filtro.criticas => a.severidad == AlertSeverity.critica,
+        _Filtro.advertencias => a.severidad == AlertSeverity.advertencia,
+        _Filtro.informacion => a.severidad == AlertSeverity.informacion,
+        _Filtro.reenviadas => a.escalada,
+      };
 
   @override
   void initState() {
@@ -90,8 +102,7 @@ class _AlertsScreenState extends State<AlertsScreen>
       body: Column(
         children: [
           _FiltroBarra(
-              filtro: _filtroSeveridad,
-              onChange: (f) => setState(() => _filtroSeveridad = f)),
+              filtro: _filtro, onChange: (f) => setState(() => _filtro = f)),
           Expanded(
             child: Consumer<AlertProvider>(
               builder: (_, prov, __) {
@@ -101,16 +112,17 @@ class _AlertsScreenState extends State<AlertsScreen>
                       mensaje: prov.error, onReintentar: prov.cargarAlertas);
                 }
 
-                final alertas = _filtroSeveridad == null
-                    ? prov.alertas
-                    : prov.alertas
-                        .where((a) => a.severidad == _filtroSeveridad)
-                        .toList();
+                final alertas = prov.alertas.where(_pasa).toList();
 
                 if (alertas.isEmpty) {
-                  return const EmptyStateWidget(
-                    mensaje: AppStrings.todasLeidas,
-                    icono: Icons.notifications_none_rounded,
+                  final soloReenviadas = _filtro == _Filtro.reenviadas;
+                  return EmptyStateWidget(
+                    mensaje: soloReenviadas
+                        ? AppStrings.sinReenviadas
+                        : AppStrings.todasLeidas,
+                    icono: soloReenviadas
+                        ? Icons.forward_to_inbox_rounded
+                        : Icons.notifications_none_rounded,
                   );
                 }
 
@@ -323,6 +335,48 @@ class _AlertTile extends StatelessWidget {
                                     color: cs.onSurface.withAlpha(120))),
                           ],
                         ),
+                        // CA-015-02: reenviada al supervisor por no atenderse en el tiempo de atención.
+                        if (alerta.escalada) ...[
+                          const SizedBox(height: 6),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 4,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                    color: AppColors.critico.withAlpha(20),
+                                    borderRadius: BorderRadius.circular(4)),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.forward_to_inbox_rounded,
+                                        size: 11, color: AppColors.critico),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      '${AppStrings.reenviadaSupervisor} · '
+                                      '${DateFormatter.hora(alerta.escaladaEn!)}',
+                                      style: const TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w600,
+                                          color: AppColors.critico),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              if (!leida && alerta.minutosSinAtender != null)
+                                Text(
+                                  '${alerta.minutosSinAtender} ${AppStrings.minSinAtender}',
+                                  style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w500,
+                                      color: cs.onSurface.withAlpha(140)),
+                                ),
+                            ],
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -369,17 +423,18 @@ class _AlertTile extends StatelessWidget {
 }
 
 class _FiltroBarra extends StatelessWidget {
-  final AlertSeverity? filtro;
-  final ValueChanged<AlertSeverity?> onChange;
+  final _Filtro filtro;
+  final ValueChanged<_Filtro> onChange;
   const _FiltroBarra({required this.filtro, required this.onChange});
 
   @override
   Widget build(BuildContext context) {
     const opciones = [
-      (null, 'Todas'),
-      (AlertSeverity.critica, 'Críticas'),
-      (AlertSeverity.advertencia, 'Advertencias'),
-      (AlertSeverity.informacion, 'Información'),
+      (_Filtro.todas, 'Todas'),
+      (_Filtro.criticas, 'Críticas'),
+      (_Filtro.advertencias, 'Advertencias'),
+      (_Filtro.informacion, 'Información'),
+      (_Filtro.reenviadas, AppStrings.filtroReenviadas),
     ];
     final cs = Theme.of(context).colorScheme;
     return Container(

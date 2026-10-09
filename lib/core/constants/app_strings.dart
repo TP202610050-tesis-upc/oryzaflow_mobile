@@ -58,6 +58,12 @@ class AppStrings {
   static const String marcarTodasLeidas = 'Marcar todas como leídas';
   static const String sinAlertas = 'Sin alertas pendientes';
   static const String todasLeidas = 'Todas las alertas han sido revisadas';
+  // CA-015-02 (HU-015): reenvío al supervisor de alertas no atendidas
+  static const String reenviadaSupervisor = 'Reenviada al supervisor';
+  static const String reenviada = 'Reenviada';
+  static const String filtroReenviadas = 'Reenviadas';
+  static const String minSinAtender = 'min sin atender';
+  static const String sinReenviadas = 'Ninguna alerta reenviada al supervisor';
 
   // Silos
   static const String silos = 'Silos';

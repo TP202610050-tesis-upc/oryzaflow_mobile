@@ -17,6 +17,11 @@ class AlertModel extends Equatable {
   final DateTime? leidaEn;
   final String? leidaPor;
   final int? minutosAtencion;
+  // CA-015-02 (HU-015): reenvío al supervisor cuando la alerta no se atiende en el tiempo configurado.
+  final DateTime? escaladaEn;
+  final String? escaladaA; // "SUPERVISOR" | null
+  final int? escaladaDispositivos;
+  final int? minutosSinAtender; // null cuando ya fue leída
 
   const AlertModel({
     required this.id,
@@ -32,6 +37,10 @@ class AlertModel extends Equatable {
     this.leidaEn,
     this.leidaPor,
     this.minutosAtencion,
+    this.escaladaEn,
+    this.escaladaA,
+    this.escaladaDispositivos,
+    this.minutosSinAtender,
   });
 
   factory AlertModel.fromJson(Map<String, dynamic> json) => AlertModel(
@@ -48,7 +57,14 @@ class AlertModel extends Equatable {
         leidaEn: parseFechaNullable(json['leidaEn']),
         leidaPor: json['leidaPor'] as String?,
         minutosAtencion: (json['minutosAtencion'] as num?)?.toInt(),
+        escaladaEn: parseFechaNullable(json['escaladaEn']),
+        escaladaA: json['escaladaA'] as String?,
+        escaladaDispositivos: (json['escaladaDispositivos'] as num?)?.toInt(),
+        minutosSinAtender: (json['minutosSinAtender'] as num?)?.toInt(),
       );
+
+  /// CA-015-02: la alerta fue reenviada al supervisor por no atenderse a tiempo.
+  bool get escalada => escaladaEn != null;
 
   AlertModel copyWith({bool? leida}) => AlertModel(
         id: id,
@@ -64,8 +80,12 @@ class AlertModel extends Equatable {
         leidaEn: leidaEn,
         leidaPor: leidaPor,
         minutosAtencion: minutosAtencion,
+        escaladaEn: escaladaEn,
+        escaladaA: escaladaA,
+        escaladaDispositivos: escaladaDispositivos,
+        minutosSinAtender: minutosSinAtender,
       );
 
   @override
-  List<Object?> get props => [id, leida];
+  List<Object?> get props => [id, leida, escaladaEn];
 }
