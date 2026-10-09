@@ -39,6 +39,8 @@ class BatchModel extends Equatable {
   final int alertasNoLeidas;
   /// HU-001/HU-003: última estimación del nodo con su antigüedad y proyección (null si no está en proceso).
   final BatchEstimationModel? estimacion;
+  /// F3: hay un segmento diario abierto (lote descubierto). `null` = el backend no lo informa.
+  final bool? segmentoAbierto;
 
   const BatchModel({
     required this.id,
@@ -68,6 +70,7 @@ class BatchModel extends Equatable {
     this.ultimaDiferenciaPp,
     this.alertasNoLeidas = 0,
     this.estimacion,
+    this.segmentoAbierto,
   });
 
   bool get estaActivo => estado == BatchStatus.enProceso;
@@ -110,6 +113,7 @@ class BatchModel extends Equatable {
         estimacion: json['estimacion'] is Map<String, dynamic>
             ? BatchEstimationModel.fromJson(json['estimacion'] as Map<String, dynamic>)
             : null,
+        segmentoAbierto: json['segmentoAbierto'] as bool?,
       );
 
   /// Payload de creación (CreateBatchResource). El operador lo toma el backend del token.
@@ -131,6 +135,7 @@ class BatchModel extends Equatable {
     double? humedadFinal,
     DateTime? fechaInicio,
     DateTime? fechaFin,
+    bool? segmentoAbierto,
   }) =>
       BatchModel(
         id: id,
@@ -160,8 +165,10 @@ class BatchModel extends Equatable {
         ultimaDiferenciaPp: ultimaDiferenciaPp,
         alertasNoLeidas: alertasNoLeidas,
         estimacion: estimacion,
+        segmentoAbierto: segmentoAbierto ?? this.segmentoAbierto,
       );
 
   @override
-  List<Object?> get props => [id, estado, humedadFinal, porVerificar, estimacion];
+  List<Object?> get props =>
+      [id, estado, humedadFinal, porVerificar, estimacion, segmentoAbierto];
 }

@@ -19,6 +19,7 @@ import '../../widgets/common/empty_state_widget.dart';
 import '../../widgets/common/error_state_widget.dart';
 import '../../widgets/common/loading_shimmer.dart';
 import '../../widgets/common/oryzaflow_app_bar.dart';
+import '../../widgets/common/sync_status_button.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -43,6 +44,7 @@ class _DashboardView extends StatelessWidget {
         titulo: AppStrings.dashboard,
         onMenuTap: () => Scaffold.of(context).openDrawer(),
         acciones: [
+          const SyncStatusButton(),
           IconButton(
             icon: const Icon(Icons.notifications_outlined),
             onPressed: () => context.go(RouteNames.alertas),

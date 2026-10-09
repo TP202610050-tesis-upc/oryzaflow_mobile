@@ -14,7 +14,9 @@ import '../../providers/batch_provider.dart';
 import '../../widgets/common/empty_state_widget.dart';
 import '../../widgets/common/error_state_widget.dart';
 import '../../widgets/common/loading_shimmer.dart';
+import '../../widgets/common/offline_banner.dart';
 import '../../widgets/common/oryzaflow_app_bar.dart';
+import '../../widgets/common/sync_status_button.dart';
 
 class BatchesListScreen extends StatelessWidget {
   const BatchesListScreen({super.key});
@@ -57,6 +59,7 @@ class _BatchesViewState extends State<_BatchesView>
       appBar: OryzaFlowAppBar(
         titulo: AppStrings.lotes,
         onMenuTap: () => Scaffold.of(context).openDrawer(),
+        acciones: const [SyncStatusButton()],
         bottom: TabBar(
           controller: _tabCtrl,
           tabs: const [
@@ -83,18 +86,30 @@ class _BatchesViewState extends State<_BatchesView>
                 mensaje: prov.error, onReintentar: prov.cargarLotes);
           }
 
-          return TabBarView(
-            controller: _tabCtrl,
+          return Column(
             children: [
-              _LotesList(
-                lotes: prov.lotesActivos,
-                emptyMsg: 'Sin lotes activos',
-                onRefresh: prov.cargarLotes,
-              ),
-              _LotesList(
-                lotes: prov.lotesHistorial,
-                emptyMsg: 'Sin historial de lotes',
-                onRefresh: prov.cargarLotes,
+              if (prov.desdeCache && prov.cacheGuardadoEn != null)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(AppDimensions.paddingM,
+                      AppDimensions.paddingM, AppDimensions.paddingM, 0),
+                  child: OfflineBanner(guardadoEn: prov.cacheGuardadoEn!),
+                ),
+              Expanded(
+                child: TabBarView(
+                  controller: _tabCtrl,
+                  children: [
+                    _LotesList(
+                      lotes: prov.lotesActivos,
+                      emptyMsg: 'Sin lotes activos',
+                      onRefresh: prov.cargarLotes,
+                    ),
+                    _LotesList(
+                      lotes: prov.lotesHistorial,
+                      emptyMsg: 'Sin historial de lotes',
+                      onRefresh: prov.cargarLotes,
+                    ),
+                  ],
+                ),
               ),
             ],
           );
@@ -143,7 +158,9 @@ class _BatchCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = SensorUtils.colorBatchStatus(lote.estado);
+    // HU-010 (CA-010-02): estado con los eventos registrados sin señal aplicados encima.
+    final visual = context.read<BatchProvider>().estadoVisual(lote);
+    final color = SensorUtils.colorBatchStatus(visual.estado);
 
     return Card(
       child: InkWell(
@@ -196,12 +213,39 @@ class _BatchCard extends StatelessWidget {
                           borderRadius: BorderRadius.circular(6),
                           border: Border.all(color: color.withAlpha(60)),
                         ),
-                        child: Text(lote.estado.displayName,
+                        child: Text(
+                            visual.recogidaPendiente
+                                ? '${visual.estado.displayName} (pendiente)'
+                                : visual.estado.displayName,
                             style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,
                                 color: color)),
                       ),
+                      if (visual.pendientes > 0 || visual.errores > 0) ...[
+                        const SizedBox(height: 4),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                                visual.errores > 0
+                                    ? Icons.sync_problem_rounded
+                                    : Icons.cloud_upload_outlined,
+                                size: 12,
+                                color: visual.errores > 0
+                                    ? AppColors.critico
+                                    : AppColors.advertencia),
+                            const SizedBox(width: 2),
+                            Text('${visual.pendientes + visual.errores}',
+                                style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: visual.errores > 0
+                                        ? AppColors.critico
+                                        : AppColors.advertencia)),
+                          ],
+                        ),
+                      ],
                       if (lote.alertasNoLeidas > 0) ...[
                         const SizedBox(height: 4),
                         Row(
@@ -241,7 +285,7 @@ class _BatchCard extends StatelessWidget {
                   ),
                 ],
               ),
-              if (lote.estado == BatchStatus.enProceso) ...[
+              if (visual.estado == BatchStatus.enProceso) ...[
                 const SizedBox(height: 8),
                 _EstimacionRow(lote: lote),
               ],

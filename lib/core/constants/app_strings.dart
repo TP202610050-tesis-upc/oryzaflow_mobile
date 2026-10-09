@@ -228,4 +228,36 @@ class AppStrings {
   static const String semana = 'Semana';
   static const String mes = 'Mes';
   static const String anio = 'Año';
+
+  // ── Registro sin señal y sincronización (HU-010, CA-010-02) ──
+  static const String sincronizacion = 'Sincronización';
+  static const String sincronizarAhora = 'Sincronizar ahora';
+  static const String sinEventosPendientes = 'No hay eventos pendientes';
+  static const String cubrirLote = 'Cubrir';
+  static const String descubrirLote = 'Descubrir';
+  static const String detener = 'Detener';
+  static const String cubrirExplicacion = 'Cierra el tramo de secado actual. Indique el motivo:';
+  static const String descubrirExplicacion =
+      'Abre un nuevo tramo de secado. Ingrese la humedad inicial del tramo (M0) medida con el PM-410:';
+  static const String m0Tramo = 'M0 (% b.h.)';
+  static const String humedadFinalOpcional = 'Humedad final (%) — opcional';
+  static const String rango5a40 = 'Entre 5 y 40 % b.h.';
+  static const String sinConexion = 'Sin conexión';
+  static const String datosGuardadosALas = 'datos guardados a las';
+  static const String offlineAcciones =
+      'Puede registrar volteos, cubrir, descubrir y detener; se enviarán al recuperar la señal.';
+  static const String offlineSeEnviaran =
+      'Sin conexión — los eventos se enviarán automáticamente al recuperar la señal';
+  static const String pendienteSincronizar = 'pendiente de sincronizar';
+  static const String descartar = 'Descartar';
+  static const String descartarEvento = 'Descartar evento';
+  static const String descartarEventoMensaje =
+      '¿Descartar este evento? El registro se perderá y no se enviará al servidor.';
+  static const String requiereConexion = 'Requiere conexión';
+  static const String volteos = 'Volteos';
+  static const String sinVolteos = 'Sin volteos registrados';
+  static const String intentos = 'Intentos';
+  static const String errores = 'Errores';
+  static const String pendientes = 'Pendientes';
+  static const String sincronizadosRecientes = 'Sincronizados (últimas 24 h)';
 }

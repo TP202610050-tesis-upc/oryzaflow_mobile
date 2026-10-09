@@ -34,6 +34,7 @@ import '../../screens/silos/edit_silo_screen.dart';
 import '../../screens/silos/edit_variety_screen.dart';
 import '../../screens/silos/silos_screen.dart';
 import '../../screens/silos/varieties_screen.dart';
+import '../../screens/sync/sync_screen.dart';
 import '../../screens/users/create_user_screen.dart';
 import '../../screens/users/user_detail_screen.dart';
 import '../../screens/users/users_list_screen.dart';
@@ -71,6 +72,8 @@ class AppRouter {
           routes: [
             GoRoute(path: RouteNames.dashboard, builder: (_, __) => const DashboardScreen()),
             GoRoute(path: RouteNames.alertas, builder: (_, __) => const AlertsScreen()),
+            // Cola de eventos registrados sin señal (HU-010, CA-010-02)
+            GoRoute(path: RouteNames.sincronizacion, builder: (_, __) => const SyncScreen()),
             // Silos
             GoRoute(
               path: RouteNames.silos,
@@ -308,6 +311,12 @@ class _AppDrawer extends StatelessWidget {
                     icon: Icons.inventory_2_outlined,
                     label: AppStrings.navLotes,
                     route: RouteNames.lotes,
+                    current: currentLocation,
+                  ),
+                  _DrawerItem(
+                    icon: Icons.cloud_sync_outlined,
+                    label: AppStrings.sincronizacion,
+                    route: RouteNames.sincronizacion,
                     current: currentLocation,
                   ),
                   _DrawerItem(

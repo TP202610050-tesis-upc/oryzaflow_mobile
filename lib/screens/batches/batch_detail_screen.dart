@@ -8,17 +8,23 @@ import '../../core/di/injection_container.dart';
 import '../../core/enums/batch_status.dart';
 import '../../core/enums/producto_destino.dart';
 import '../../core/router/route_names.dart';
+import '../../core/sync/sync_service.dart';
 import '../../core/utils/date_formatter.dart';
 import '../../core/utils/sensor_utils.dart';
 import '../../models/batch_estimation_model.dart';
 import '../../models/batch_model.dart';
+import '../../models/pending_event_model.dart';
+import '../../models/volteo_model.dart';
 import '../../providers/batch_provider.dart';
 import '../../widgets/common/confirmation_dialog.dart';
 import '../../widgets/common/empty_state_widget.dart';
 import '../../widgets/common/error_state_widget.dart';
 import '../../widgets/common/loading_shimmer.dart';
+import '../../widgets/common/offline_banner.dart';
 import '../../widgets/common/oryzaflow_app_bar.dart';
 import '../../widgets/common/sensor_chart_card.dart';
+import '../../widgets/common/sync_status_button.dart';
+import 'batch_event_dialogs.dart';
 
 class BatchDetailScreen extends StatelessWidget {
   final String loteId;
@@ -31,6 +37,7 @@ class BatchDetailScreen extends StatelessWidget {
         final p = sl<BatchProvider>();
         p.cargarLote(loteId);
         p.cargarLecturas(loteId);
+        p.cargarVolteos(loteId);
         return p;
       },
       child: _BatchDetailView(loteId: loteId),
@@ -73,29 +80,37 @@ class _BatchDetailView extends StatelessWidget {
               body: EmptyStateWidget(mensaje: 'Lote no encontrado'));
         }
 
+        // HU-010 (CA-010-02): estado del lote con los eventos registrados sin señal aplicados encima.
+        final visual = prov.estadoVisual(lote);
         return Scaffold(
           appBar: OryzaFlowAppBar(
             titulo: lote.codigo,
             mostrarBotonAtras: true,
+            acciones: const [SyncStatusButton()],
           ),
           body: RefreshIndicator(
             onRefresh: () async {
               await prov.cargarLote(lote.id);
               await prov.cargarLecturas(lote.id);
+              await prov.cargarVolteos(lote.id);
             },
             color: AppColors.verde,
             child: ListView(
               padding: const EdgeInsets.all(AppDimensions.paddingM),
               children: [
-                _StatusBanner(lote: lote),
+                if (prov.desdeCache && prov.cacheGuardadoEn != null)
+                  OfflineBanner(guardadoEn: prov.cacheGuardadoEn!),
+                _StatusBanner(lote: lote, visual: visual),
                 const SizedBox(height: AppDimensions.paddingM),
-                if (lote.estado == BatchStatus.enProceso) ...[
+                if (visual.estado == BatchStatus.enProceso) ...[
                   _EstimacionSection(lote: lote),
                   const SizedBox(height: AppDimensions.paddingM),
                 ],
                 _InfoSection(lote: lote),
                 const SizedBox(height: AppDimensions.paddingM),
-                _ControlSection(lote: lote, prov: prov),
+                _ControlSection(lote: lote, prov: prov, visual: visual),
+                const SizedBox(height: AppDimensions.paddingM),
+                _VolteosSection(volteos: prov.volteos),
                 const SizedBox(height: AppDimensions.paddingM),
                 Text(AppStrings.lecturasDelLote,
                     style: Theme.of(context).textTheme.titleMedium),
@@ -120,11 +135,15 @@ class _BatchDetailView extends StatelessWidget {
 
 class _StatusBanner extends StatelessWidget {
   final BatchModel lote;
-  const _StatusBanner({required this.lote});
+  final EstadoLoteVisual visual;
+  const _StatusBanner({required this.lote, required this.visual});
 
   @override
   Widget build(BuildContext context) {
-    final color = SensorUtils.colorBatchStatus(lote.estado);
+    final color = SensorUtils.colorBatchStatus(visual.estado);
+    final titulo = visual.recogidaPendiente
+        ? '${visual.estado.displayName} (${AppStrings.pendienteSincronizar})'
+        : visual.estado.displayName;
 
     return Container(
       padding: const EdgeInsets.all(AppDimensions.paddingM),
@@ -146,7 +165,7 @@ class _StatusBanner extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(lote.estado.displayName,
+                Text(titulo,
                     style: TextStyle(
                         fontWeight: FontWeight.w700,
                         fontSize: 16,
@@ -155,6 +174,23 @@ class _StatusBanner extends StatelessWidget {
                   Text('${lote.alertasNoLeidas} alerta(s) sin atender',
                       style: const TextStyle(
                           fontSize: 12, color: AppColors.advertencia)),
+                if (visual.coberturaPendiente != null)
+                  Text(
+                      visual.coberturaPendiente == TipoEvento.cubrir
+                          ? 'Cubierto (pendiente)'
+                          : 'Descubierto (pendiente)',
+                      style: const TextStyle(
+                          fontSize: 12, color: AppColors.advertencia)),
+                if (visual.errores > 0)
+                  InkWell(
+                    onTap: () => context.push(RouteNames.sincronizacion),
+                    child: Text(
+                        '${visual.errores} evento(s) con error — ver ${AppStrings.sincronizacion}',
+                        style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.critico,
+                            decoration: TextDecoration.underline)),
+                  ),
               ],
             ),
           ),
@@ -496,12 +532,15 @@ class _Row extends StatelessWidget {
 class _ControlSection extends StatelessWidget {
   final BatchModel lote;
   final BatchProvider prov;
-  const _ControlSection({required this.lote, required this.prov});
+  final EstadoLoteVisual visual;
+  const _ControlSection(
+      {required this.lote, required this.prov, required this.visual});
 
   @override
   Widget build(BuildContext context) {
-    final cerrado = lote.estado == BatchStatus.completado ||
-        lote.estado == BatchStatus.cancelado;
+    final cerrado = visual.estado == BatchStatus.completado ||
+        visual.estado == BatchStatus.cancelado;
+    final ocupado = prov.estaProcesando;
 
     return Card(
       child: Padding(
@@ -512,11 +551,12 @@ class _ControlSection extends StatelessWidget {
             Text('Control de Secado',
                 style: Theme.of(context).textTheme.titleSmall),
             const SizedBox(height: AppDimensions.paddingM),
-            if (lote.estado == BatchStatus.pendiente)
+            if (lote.estado == BatchStatus.pendiente) ...[
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  onPressed: prov.estaProcesando
+                  // Iniciar aprovisiona el nodo: requiere conexión, no se encola.
+                  onPressed: (ocupado || !prov.hayRed)
                       ? null
                       : () async {
                           final ok = await prov.iniciarSecado(lote.id);
@@ -536,23 +576,19 @@ class _ControlSection extends StatelessWidget {
                       foregroundColor: Colors.white),
                 ),
               ),
-            if (lote.estado == BatchStatus.enProceso)
+              if (!prov.hayRed)
+                const Padding(
+                  padding: EdgeInsets.only(top: 4),
+                  child: Text(AppStrings.requiereConexion,
+                      style: TextStyle(
+                          fontSize: 11, color: AppColors.textoSecundario)),
+                ),
+            ],
+            if (visual.estado == BatchStatus.enProceso) ...[
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
-                  onPressed: prov.estaProcesando
-                      ? null
-                      : () async {
-                          final ok = await prov.detenerSecado(lote.id);
-                          if (!context.mounted) return;
-                          if (!ok) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                  content: Text(prov.error ?? 'Error'),
-                                  backgroundColor: AppColors.critico),
-                            );
-                          }
-                        },
+                  onPressed: ocupado ? null : () => _detener(context),
                   icon: const Icon(Icons.stop_rounded,
                       color: AppColors.critico),
                   label: const Text(AppStrings.detenerSecado,
@@ -561,16 +597,39 @@ class _ControlSection extends StatelessWidget {
                       side: const BorderSide(color: AppColors.critico)),
                 ),
               ),
-            if (lote.estado == BatchStatus.enProceso) ...[
               const SizedBox(height: AppDimensions.paddingS),
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
-                  onPressed:
-                      prov.estaProcesando ? null : () => _confirmarVolteo(context),
+                  onPressed: ocupado ? null : () => _confirmarVolteo(context),
                   icon: const Icon(Icons.autorenew_rounded),
                   label: const Text(AppStrings.registrarVolteo),
                 ),
+              ),
+              const SizedBox(height: AppDimensions.paddingS),
+              // F3: cubrir cierra el tramo (NOCHE/LLUVIA); descubrir abre el siguiente con la M0 del PM-410.
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: (ocupado || visual.cubierto == true)
+                          ? null
+                          : () => _cubrir(context),
+                      icon: const Icon(Icons.nights_stay_rounded),
+                      label: const Text(AppStrings.cubrirLote),
+                    ),
+                  ),
+                  const SizedBox(width: AppDimensions.paddingS),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: (ocupado || visual.cubierto == false)
+                          ? null
+                          : () => _descubrir(context),
+                      icon: const Icon(Icons.wb_sunny_rounded),
+                      label: const Text(AppStrings.descubrirLote),
+                    ),
+                  ),
+                ],
               ),
             ],
             // HU-013: lecturas del medidor y pares (también en lotes cerrados: las planillas se cargan después).
@@ -591,6 +650,32 @@ class _ControlSection extends StatelessWidget {
     );
   }
 
+  /// CA-010-02: enviado (verde), guardado sin señal (neutro, con su hora, sin pedir reingreso) o rechazado (rojo).
+  Future<void> _manejar(BuildContext context,
+      Future<ResultadoRegistro> Function() accion, TipoEvento tipo) async {
+    final r = await accion();
+    if (!context.mounted) return;
+    final msgr = ScaffoldMessenger.of(context);
+    switch (r) {
+      case Enviado(:final ts):
+        msgr.showSnackBar(SnackBar(
+          content: Text(tipo.mensajeEnviado(DateFormatter.hora(ts.toLocal()))),
+          backgroundColor: AppColors.verde,
+        ));
+      case Encolado(:final evento):
+        msgr.showSnackBar(SnackBar(
+          content: Text(tipo.mensajeGuardadoOffline(
+              DateFormatter.hora(evento.ts.toLocal()))),
+          duration: const Duration(seconds: 5),
+        ));
+      case Rechazado(:final mensaje):
+        msgr.showSnackBar(SnackBar(
+          content: Text(mensaje),
+          backgroundColor: AppColors.critico,
+        ));
+    }
+  }
+
   Future<void> _confirmarVolteo(BuildContext context) async {
     final ok = await mostrarDialogoConfirmacion(
       context: context,
@@ -603,14 +688,79 @@ class _ControlSection extends StatelessWidget {
       textoConfirmar: 'Registrar',
     );
     if (ok != true || !context.mounted) return;
-    final exito = await prov.registrarVolteo(lote.id);
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(exito
-            ? 'Volteo manual registrado'
-            : (prov.error ?? 'No se pudo registrar el volteo')),
-        backgroundColor: exito ? AppColors.verde : AppColors.critico,
+    await _manejar(
+        context, () => prov.registrarVolteo(lote.id), TipoEvento.volteo);
+  }
+
+  Future<void> _cubrir(BuildContext context) async {
+    final motivo =
+        await mostrarDialogoCubrir(context, codigoLote: lote.codigo);
+    if (motivo == null || !context.mounted) return;
+    await _manejar(
+        context, () => prov.cubrirLote(lote.id, motivo), TipoEvento.cubrir);
+  }
+
+  Future<void> _descubrir(BuildContext context) async {
+    final m0 = await mostrarDialogoDescubrir(context, codigoLote: lote.codigo);
+    if (m0 == null || !context.mounted) return;
+    await _manejar(
+        context, () => prov.descubrirLote(lote.id, m0), TipoEvento.descubrir);
+  }
+
+  Future<void> _detener(BuildContext context) async {
+    final r = await mostrarDialogoDetener(context, codigoLote: lote.codigo);
+    if (r == null || !context.mounted) return;
+    await _manejar(
+        context,
+        () => prov.detenerSecado(lote.id, humedadFinal: r.humedadFinal),
+        TipoEvento.recoger);
+  }
+}
+
+/// Volteos del lote con su hora (servidor + registrados sin señal, HU-010).
+class _VolteosSection extends StatelessWidget {
+  final List<VolteoModel> volteos;
+  const _VolteosSection({required this.volteos});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(AppDimensions.paddingM),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(AppStrings.volteos,
+                style: Theme.of(context).textTheme.titleSmall),
+            const SizedBox(height: AppDimensions.paddingS),
+            if (volteos.isEmpty)
+              const Text(AppStrings.sinVolteos,
+                  style: TextStyle(
+                      fontSize: 13, color: AppColors.textoSecundario))
+            else
+              for (final v in volteos)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.autorenew_rounded,
+                          size: 18, color: AppColors.textoSecundario),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(DateFormatter.fechaHora(v.timestamp),
+                            style: const TextStyle(
+                                fontSize: 13, fontWeight: FontWeight.w500)),
+                      ),
+                      if (v.pendiente)
+                        const _Chip(
+                            texto: AppStrings.pendienteSincronizar,
+                            color: AppColors.advertencia,
+                            icono: Icons.cloud_upload_outlined),
+                    ],
+                  ),
+                ),
+          ],
+        ),
       ),
     );
   }

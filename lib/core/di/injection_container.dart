@@ -2,6 +2,11 @@ import 'package:get_it/get_it.dart';
 import '../network/api_client.dart';
 import '../notifications/push_service.dart';
 import '../network/token_storage.dart';
+import '../storage/local_store.dart';
+import '../storage/offline_cache.dart';
+import '../sync/connectivity_probe.dart';
+import '../sync/event_queue_store.dart';
+import '../sync/sync_service.dart';
 import '../../providers/alert_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/batch_provider.dart';
@@ -43,15 +48,21 @@ Future<void> configurarDependencias() async {
   sl.registerLazySingleton<TokenStorage>(() => TokenStorage());
   sl.registerLazySingleton<ApiClient>(() => ApiClient(sl<TokenStorage>()));
 
+  // ── Almacén local: caché sin señal + cola de eventos (HU-010, CA-010-02) ──
+  sl.registerLazySingleton<LocalStore>(() => SharedPrefsLocalStore());
+  sl.registerLazySingleton<OfflineCache>(() => OfflineCache(sl<LocalStore>()));
+  sl.registerLazySingleton<ConnectivityProbe>(() => PlusConnectivityProbe());
+  sl.registerLazySingleton<EventQueueStore>(() => EventQueueStore(sl<LocalStore>()));
+
   // ── Repositories (todos REALES salvo settings, que son preferencias locales) ──
   sl.registerLazySingleton<IAuthRepository>(
-      () => RealAuthRepository(sl<ApiClient>(), sl<TokenStorage>()));
+      () => RealAuthRepository(sl<ApiClient>(), sl<TokenStorage>(), sl<OfflineCache>()));
   sl.registerLazySingleton<IDashboardRepository>(
       () => RealDashboardRepository(sl<ApiClient>()));
   sl.registerLazySingleton<IAlertRepository>(
       () => RealAlertRepository(sl<ApiClient>()));
   sl.registerLazySingleton<IBatchRepository>(
-      () => RealBatchRepository(sl<ApiClient>()));
+      () => RealBatchRepository(sl<ApiClient>(), sl<OfflineCache>()));
   sl.registerLazySingleton<ISiloRepository>(
       () => RealSiloRepository(sl<ApiClient>()));
   sl.registerLazySingleton<IVarietyRepository>(
@@ -64,6 +75,13 @@ Future<void> configurarDependencias() async {
       () => RealReportRepository(sl<ApiClient>()));
   sl.registerLazySingleton<IUserRepository>(
       () => RealUserRepository(sl<ApiClient>()));
+
+  // Cola de eventos del lote y sincronización (singleton; se inicializa en main).
+  sl.registerLazySingleton<SyncService>(() => SyncService(
+        sl<EventQueueStore>(),
+        sl<IBatchRepository>(),
+        sl<ConnectivityProbe>(),
+      ));
 
   // Settings = preferencias de app (tema/idioma/notif), sin backend → local/mock.
   sl.registerLazySingleton<ISettingsRepository>(
@@ -101,6 +119,8 @@ Future<void> configurarDependencias() async {
         sl<IVarietyRepository>(),
         sl<IDryingProfileRepository>(),
         sl<INodeRepository>(),
+        sl<OfflineCache>(),
+        sl<SyncService>(),
       ));
   sl.registerFactory<MonitoringProvider>(
       () => MonitoringProvider(sl<INodeRepository>()));

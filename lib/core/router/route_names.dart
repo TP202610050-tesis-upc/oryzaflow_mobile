@@ -55,4 +55,7 @@ class RouteNames {
 
   // Perfil propio
   static const String editarPerfil = '/perfil/editar';
+
+  // Registro sin señal (HU-010, CA-010-02)
+  static const String sincronizacion = '/sincronizacion';
 }

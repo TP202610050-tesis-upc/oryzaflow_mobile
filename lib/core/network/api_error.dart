@@ -1,4 +1,20 @@
+import 'dart:io';
+
 import 'package:dio/dio.dart';
+
+/// `true` si el fallo es de red (sin señal, timeout, socket): el evento se puede guardar
+/// localmente y reintentar (HU-010, CA-010-02).
+bool esErrorDeRed(Object e) =>
+    e is DioException &&
+    (e.type == DioExceptionType.connectionTimeout ||
+        e.type == DioExceptionType.sendTimeout ||
+        e.type == DioExceptionType.receiveTimeout ||
+        e.type == DioExceptionType.connectionError ||
+        e.error is SocketException);
+
+/// `true` si el backend respondió 5xx: también se reintenta más tarde.
+bool esErrorServidor(Object e) =>
+    e is DioException && (e.response?.statusCode ?? 0) >= 500;
 
 /// Mensaje legible de un error de red/backend. El backend responde `{ "message": "..." }` en 400/404/409
 /// (GlobalExceptionHandler); ese texto es el del criterio de aceptación y se muestra tal cual.

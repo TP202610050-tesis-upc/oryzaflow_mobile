@@ -1,17 +1,23 @@
 import 'package:dio/dio.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import '../../core/network/api_client.dart';
+import '../../core/network/api_error.dart';
 import '../../core/network/token_storage.dart';
+import '../../core/storage/offline_cache.dart';
 import '../../models/user_model.dart';
 import '../i_auth_repository.dart';
 
 /// Autenticación real contra el backend. Persiste el JWT en TokenStorage; el ApiClient
 /// lo adjunta a las demás peticiones y limpia la sesión ante un 401.
+///
+/// Sin señal (HU-010, CA-010-02): si el JWT sigue vigente y `/auth/me` falla por red, la sesión se
+/// mantiene con el usuario guardado en la caché local; solo un 401 o un JWT vencido la cierran.
 class RealAuthRepository implements IAuthRepository {
   final ApiClient _api;
   final TokenStorage _tokenStorage;
+  final OfflineCache _cache;
 
-  RealAuthRepository(this._api, this._tokenStorage);
+  RealAuthRepository(this._api, this._tokenStorage, this._cache);
 
   @override
   Future<UserModel> login({
@@ -25,7 +31,9 @@ class RealAuthRepository implements IAuthRepository {
       });
       final data = res.data as Map<String, dynamic>;
       await _tokenStorage.guardarToken(data['token'] as String);
-      return UserModel.fromJson(data['user'] as Map<String, dynamic>);
+      final user = data['user'] as Map<String, dynamic>;
+      await _guardarUsuario(user);
+      return UserModel.fromJson(user);
     } on DioException catch (e) {
       if (e.response?.statusCode == 401) {
         throw Exception('Credenciales inválidas');
@@ -42,6 +50,7 @@ class RealAuthRepository implements IAuthRepository {
       // Aunque falle el backend, la sesión local se cierra igual.
     } finally {
       await _tokenStorage.limpiar();
+      await _cache.limpiarCacheDeSesion(); // la cola de eventos se conserva
     }
   }
 
@@ -50,13 +59,28 @@ class RealAuthRepository implements IAuthRepository {
     final token = await _tokenStorage.leerToken();
     if (token == null || token.isEmpty || JwtDecoder.isExpired(token)) {
       await _tokenStorage.limpiar();
+      await _cache.limpiarCacheDeSesion();
       return null;
     }
     try {
       final res = await _api.dio.get('/auth/me');
-      return UserModel.fromJson(res.data as Map<String, dynamic>);
+      final user = res.data as Map<String, dynamic>;
+      await _guardarUsuario(user);
+      return UserModel.fromJson(user);
+    } on DioException catch (e) {
+      if (esErrorDeRed(e) || esErrorServidor(e)) {
+        // Sin señal con JWT vigente: se abre la app con el usuario cacheado y se conserva el token.
+        final cacheado = await _cache.leerUsuario();
+        if (cacheado != null) return UserModel.fromJson(cacheado.data);
+        return null;
+      }
+      // 401 u otro rechazo del backend: el interceptor ya limpió el token; se cierra la sesión.
+      await _tokenStorage.limpiar();
+      await _cache.limpiarCacheDeSesion();
+      return null;
     } catch (_) {
       await _tokenStorage.limpiar();
+      await _cache.limpiarCacheDeSesion();
       return null;
     }
   }
@@ -82,7 +106,9 @@ class RealAuthRepository implements IAuthRepository {
       'nombre': nombre,
       'telefono': telefono,
     });
-    return UserModel.fromJson(res.data as Map<String, dynamic>);
+    final user = res.data as Map<String, dynamic>;
+    await _guardarUsuario(user);
+    return UserModel.fromJson(user);
   }
 
   @override
@@ -95,5 +121,13 @@ class RealAuthRepository implements IAuthRepository {
       'contrasenaActual': contrasenaActual,
       'nuevaContrasena': nuevaContrasena,
     });
+  }
+
+  Future<void> _guardarUsuario(Map<String, dynamic> json) async {
+    try {
+      await _cache.guardarUsuario(json);
+    } catch (_) {
+      // La caché es best-effort.
+    }
   }
 }
