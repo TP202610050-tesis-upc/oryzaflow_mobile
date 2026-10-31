@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../core/enums/user_role.dart';
+import '../../models/drying_profile_model.dart';
 import '../../models/silo_model.dart';
 import '../../models/user_model.dart';
 import '../../models/variety_model.dart';
@@ -12,12 +13,12 @@ import '../../screens/auth/recover_password_screen.dart';
 import '../../screens/auth/splash_screen.dart';
 import '../../screens/batches/batch_detail_screen.dart';
 import '../../screens/batches/batches_list_screen.dart';
+import '../../screens/batches/manual_readings_screen.dart';
 import '../../screens/batches/new_batch_screen.dart';
 import '../../screens/dashboard/alerts_screen.dart';
 import '../../screens/dashboard/dashboard_screen.dart';
 import '../../screens/monitoring/esp32_config_screen.dart';
 import '../../screens/monitoring/monitoring_screen.dart';
-import '../../screens/monitoring/parameters_screen.dart';
 import '../../screens/reports/drying_charts_screen.dart';
 import '../../screens/reports/drying_history_screen.dart';
 import '../../screens/reports/export_report_screen.dart';
@@ -27,10 +28,13 @@ import '../../screens/settings/help_faq_screen.dart';
 import '../../screens/settings/preferences_screen.dart';
 import '../../screens/settings/settings_screen.dart';
 import '../../screens/silos/availability_screen.dart';
+import '../../screens/silos/drying_profiles_screen.dart';
+import '../../screens/silos/edit_drying_profile_screen.dart';
 import '../../screens/silos/edit_silo_screen.dart';
 import '../../screens/silos/edit_variety_screen.dart';
 import '../../screens/silos/silos_screen.dart';
 import '../../screens/silos/varieties_screen.dart';
+import '../../screens/sync/sync_screen.dart';
 import '../../screens/users/create_user_screen.dart';
 import '../../screens/users/user_detail_screen.dart';
 import '../../screens/users/users_list_screen.dart';
@@ -68,6 +72,8 @@ class AppRouter {
           routes: [
             GoRoute(path: RouteNames.dashboard, builder: (_, __) => const DashboardScreen()),
             GoRoute(path: RouteNames.alertas, builder: (_, __) => const AlertsScreen()),
+            // Cola de eventos registrados sin señal (HU-010, CA-010-02)
+            GoRoute(path: RouteNames.sincronizacion, builder: (_, __) => const SyncScreen()),
             // Silos
             GoRoute(
               path: RouteNames.silos,
@@ -81,6 +87,13 @@ class AppRouter {
                     GoRoute(path: 'editar', builder: (_, state) => EditVarietyScreen(variedad: state.extra as VarietyModel?)),
                   ],
                 ),
+                GoRoute(
+                  path: 'perfiles',
+                  builder: (_, __) => const DryingProfilesScreen(),
+                  routes: [
+                    GoRoute(path: 'editar', builder: (_, state) => EditDryingProfileScreen(perfil: state.extra as DryingProfileModel?)),
+                  ],
+                ),
                 GoRoute(path: 'disponibilidad', builder: (_, __) => const AvailabilityScreen()),
               ],
             ),
@@ -90,7 +103,13 @@ class AppRouter {
               builder: (_, __) => const BatchesListScreen(),
               routes: [
                 GoRoute(path: 'nuevo', builder: (_, __) => const NewBatchScreen()),
-                GoRoute(path: ':loteId', builder: (_, state) => BatchDetailScreen(loteId: state.pathParameters['loteId']!)),
+                GoRoute(
+                  path: ':loteId',
+                  builder: (_, state) => BatchDetailScreen(loteId: state.pathParameters['loteId']!),
+                  routes: [
+                    GoRoute(path: 'lecturas', builder: (_, state) => ManualReadingsScreen(loteId: state.pathParameters['loteId']!)),
+                  ],
+                ),
               ],
             ),
             // Monitoreo
@@ -98,7 +117,6 @@ class AppRouter {
               path: RouteNames.monitoreo,
               builder: (_, __) => const MonitoringScreen(),
               routes: [
-                GoRoute(path: 'parametros', builder: (_, __) => const ParametersScreen()),
                 GoRoute(path: 'esp32', builder: (_, state) => Esp32ConfigScreen(nodoId: state.uri.queryParameters['nodo'])),
               ],
             ),
@@ -274,7 +292,8 @@ class _AppDrawer extends StatelessWidget {
                     current: currentLocation,
                     selectedIf: (loc) =>
                         loc.startsWith(RouteNames.silos) &&
-                        !loc.startsWith(RouteNames.variedades),
+                        !loc.startsWith(RouteNames.variedades) &&
+                        !loc.startsWith(RouteNames.perfilesSecado),
                   ),
                   _DrawerItem(
                     icon: Icons.grass_outlined,
@@ -283,9 +302,21 @@ class _AppDrawer extends StatelessWidget {
                     current: currentLocation,
                   ),
                   _DrawerItem(
+                    icon: Icons.tune_outlined,
+                    label: AppStrings.perfilesSecado,
+                    route: RouteNames.perfilesSecado,
+                    current: currentLocation,
+                  ),
+                  _DrawerItem(
                     icon: Icons.inventory_2_outlined,
                     label: AppStrings.navLotes,
                     route: RouteNames.lotes,
+                    current: currentLocation,
+                  ),
+                  _DrawerItem(
+                    icon: Icons.cloud_sync_outlined,
+                    label: AppStrings.sincronizacion,
+                    route: RouteNames.sincronizacion,
                     current: currentLocation,
                   ),
                   _DrawerItem(
@@ -497,28 +528,33 @@ class _DrawerLogoutButton extends StatelessWidget {
             color: Color(0xFFEF9A9A)),
       ),
       onTap: () async {
-        Navigator.of(context).pop();
+        // Capturamos las referencias antes de cerrar el drawer: al hacer pop,
+        // el context de este ListTile queda desmontado (defunct) y dejaría de
+        // funcionar tanto el diálogo como el cierre de sesión.
+        final authProvider = context.read<AuthProvider>();
+        final navigator = Navigator.of(context);
+        navigator.pop(); // cierra el drawer
         final confirmed = await showDialog<bool>(
-          context: context,
-          builder: (_) => AlertDialog(
+          context: navigator.context,
+          builder: (dialogContext) => AlertDialog(
             title: const Text('Cerrar sesión'),
             content:
                 const Text('¿Estás seguro de que quieres cerrar sesión?'),
             actions: [
               TextButton(
-                onPressed: () => Navigator.pop(context, false),
+                onPressed: () => Navigator.pop(dialogContext, false),
                 child: const Text('Cancelar'),
               ),
               TextButton(
-                onPressed: () => Navigator.pop(context, true),
+                onPressed: () => Navigator.pop(dialogContext, true),
                 child: const Text('Salir',
                     style: TextStyle(color: Colors.red)),
               ),
             ],
           ),
         );
-        if (confirmed == true && context.mounted) {
-          await context.read<AuthProvider>().cerrarSesion();
+        if (confirmed == true) {
+          await authProvider.cerrarSesion();
         }
       },
     );

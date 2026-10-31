@@ -1,11 +1,13 @@
 import 'package:equatable/equatable.dart';
 import '../core/enums/user_role.dart';
+import '../core/network/json_mappers.dart';
 
 class UserModel extends Equatable {
   final String id;
   final String nombre;
   final String email;
-  final String passwordHash;
+  // Solo lo usan los mocks; el backend nunca devuelve el hash.
+  final String? passwordHash;
   final UserRole rol;
   final bool activo;
   final String? telefono;
@@ -15,12 +17,22 @@ class UserModel extends Equatable {
     required this.id,
     required this.nombre,
     required this.email,
-    required this.passwordHash,
     required this.rol,
     required this.activo,
     required this.creadoEn,
+    this.passwordHash,
     this.telefono,
   });
+
+  factory UserModel.fromJson(Map<String, dynamic> json) => UserModel(
+        id: json['id'].toString(),
+        nombre: json['nombre'] as String? ?? '',
+        email: json['email'] as String? ?? '',
+        rol: userRoleFromApi(json['roles'] as List<dynamic>?),
+        activo: json['activo'] as bool? ?? true,
+        telefono: json['telefono'] as String?,
+        creadoEn: parseFecha(json['createdAt']),
+      );
 
   UserModel copyWith({
     String? nombre,

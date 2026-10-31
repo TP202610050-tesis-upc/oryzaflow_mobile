@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/network/api_error.dart';
 import '../models/batch_model.dart';
 import '../models/kpi_model.dart';
 import '../models/silo_model.dart';
@@ -60,7 +61,7 @@ class ReportProvider extends ChangeNotifier {
       _silos = r[1] as List<SiloModel>;
       _variedades = r[2] as List<VarietyModel>;
     } catch (e) {
-      _error = e.toString();
+      _error = apiErrorMessage(e);
     } finally {
       _cargando = false;
       notifyListeners();
@@ -74,7 +75,7 @@ class ReportProvider extends ChangeNotifier {
     try {
       _kpis = await _reportRepo.obtenerKpis(desde: _desde, hasta: _hasta);
     } catch (e) {
-      _error = e.toString();
+      _error = apiErrorMessage(e);
     } finally {
       _cargando = false;
       notifyListeners();
@@ -91,7 +92,7 @@ class ReportProvider extends ChangeNotifier {
           desde: _desde, hasta: _hasta, formato: formato);
       return true;
     } catch (e) {
-      _error = e.toString();
+      _error = apiErrorMessage(e);
       return false;
     } finally {
       _exportando = false;

@@ -6,18 +6,19 @@ import '../models/node_model.dart';
 import '../models/silo_model.dart';
 import '../repositories/i_alert_repository.dart';
 import '../repositories/i_batch_repository.dart';
+import '../repositories/i_dashboard_repository.dart';
 import '../repositories/i_node_repository.dart';
 import '../repositories/i_silo_repository.dart';
-import '../core/enums/node_status.dart';
 
 class DashboardProvider extends ChangeNotifier {
+  final IDashboardRepository _dashboardRepo;
   final INodeRepository _nodeRepo;
   final IBatchRepository _batchRepo;
   final IAlertRepository _alertRepo;
   final ISiloRepository _siloRepo;
 
-  DashboardProvider(
-      this._nodeRepo, this._batchRepo, this._alertRepo, this._siloRepo);
+  DashboardProvider(this._dashboardRepo, this._nodeRepo, this._batchRepo,
+      this._alertRepo, this._siloRepo);
 
   DashboardSummaryModel? _resumen;
   List<NodeModel> _nodos = [];
@@ -40,50 +41,20 @@ class DashboardProvider extends ChangeNotifier {
     _error = null;
     notifyListeners();
     try {
+      // El resumen (KPIs) lo agrega el backend; las listas se traen para mostrarlas.
       final resultados = await Future.wait([
+        _dashboardRepo.obtenerResumen(),
         _nodeRepo.obtenerNodos(),
         _batchRepo.obtenerLotesActivos(),
         _alertRepo.obtenerAlertas(),
         _siloRepo.obtenerSilos(),
       ]);
 
-      _nodos = resultados[0] as List<NodeModel>;
-      _lotesActivos = resultados[1] as List<BatchModel>;
-      final todasAlertas = resultados[2] as List<AlertModel>;
-      _silos = resultados[3] as List<SiloModel>;
-
-      _alertasRecientes = todasAlertas.take(5).toList();
-
-      final nodosActivos =
-          _nodos.where((n) => n.estado == NodeStatus.activo).length;
-      final alertasNoLeidas =
-          todasAlertas.where((a) => !a.leida).length;
-      final kgHoy = _lotesActivos.fold<double>(0, (s, l) => s + l.pesoKg);
-      final tempProm = nodosActivos == 0
-          ? 0.0
-          : _nodos
-                  .where((n) => n.estado == NodeStatus.activo)
-                  .fold<double>(0, (s, n) => s + n.temperatura) /
-              nodosActivos;
-      final hgProm = nodosActivos == 0
-          ? 0.0
-          : _nodos
-                  .where((n) => n.estado == NodeStatus.activo)
-                  .fold<double>(0, (s, n) => s + n.humedadGrano) /
-              nodosActivos;
-      final silosDisp =
-          _silos.where((s) => s.estado == SiloStatus.disponible).length;
-
-      _resumen = DashboardSummaryModel(
-        nodosActivos: nodosActivos,
-        totalNodos: _nodos.length,
-        lotesEnProceso: _lotesActivos.length,
-        alertasNoLeidas: alertasNoLeidas,
-        totalKgProcesadosHoy: kgHoy,
-        humedadGranoPromedio: hgProm,
-        temperaturaPromedio: tempProm,
-        silosDisponibles: silosDisp,
-      );
+      _resumen = resultados[0] as DashboardSummaryModel;
+      _nodos = resultados[1] as List<NodeModel>;
+      _lotesActivos = resultados[2] as List<BatchModel>;
+      _alertasRecientes = (resultados[3] as List<AlertModel>).take(5).toList();
+      _silos = resultados[4] as List<SiloModel>;
     } catch (e) {
       _error = e.toString();
     } finally {

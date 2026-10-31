@@ -129,6 +129,7 @@ class _SiloFiltroBarra extends StatelessWidget {
       (SiloStatus.disponible, 'Disponibles'),
       (SiloStatus.ocupado, 'En uso'),
       (SiloStatus.mantenimiento, 'Mantenimiento'),
+      (SiloStatus.deBaja, 'De baja'),
     ];
     final cs = Theme.of(context).colorScheme;
     return Container(
@@ -235,7 +236,7 @@ class _SiloCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                    'Capacidad: ${silo.capacidadToneladas.toStringAsFixed(0)}t',
+                    'Capacidad: ${silo.capacidadKg.toStringAsFixed(0)} kg',
                     style: TextStyle(
                         fontSize: 12,
                         color: Theme.of(context).colorScheme.onSurface.withAlpha(130))),

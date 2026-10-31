@@ -1,6 +1,6 @@
 {
-    "name": "oryzaflow_mobile",
-    "short_name": "oryzaflow_mobile",
+    "name": "OryzaFlow",
+    "short_name": "OryzaFlow",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
+import '../core/network/api_error.dart';
 import '../models/esp32_config_model.dart';
 import '../models/node_model.dart';
 import '../models/sensor_reading_model.dart';
-import '../models/threshold_model.dart';
-import '../models/volteo_model.dart';
 import '../repositories/i_node_repository.dart';
 import '../core/enums/node_status.dart';
 
@@ -16,8 +15,6 @@ class MonitoringProvider extends ChangeNotifier {
   NodeModel? _nodoSeleccionado;
   List<SensorReadingModel> _lecturas = [];
   Esp32ConfigModel? _config;
-  ThresholdModel? _umbrales;
-  final Map<String, VolteoModel> _ultimoVolteo = {};
   bool _cargando = false;
   bool _cargandoLecturas = false;
   bool _procesando = false;
@@ -27,13 +24,10 @@ class MonitoringProvider extends ChangeNotifier {
   NodeModel? get nodoSeleccionado => _nodoSeleccionado;
   List<SensorReadingModel> get lecturas => _lecturas;
   Esp32ConfigModel? get config => _config;
-  ThresholdModel? get umbrales => _umbrales;
   bool get estaCargando => _cargando;
   bool get estaCargandoLecturas => _cargandoLecturas;
   bool get estaProcesando => _procesando;
   String? get error => _error;
-
-  VolteoModel? ultimoVolteo(String nodoId) => _ultimoVolteo[nodoId];
 
   Future<void> cargarNodos() async {
     _cargando = true;
@@ -42,7 +36,7 @@ class MonitoringProvider extends ChangeNotifier {
     try {
       _nodos = await _repositorio.obtenerNodos();
     } catch (e) {
-      _error = e.toString();
+      _error = apiErrorMessage(e);
     } finally {
       _cargando = false;
       notifyListeners();
@@ -55,7 +49,7 @@ class MonitoringProvider extends ChangeNotifier {
     try {
       _nodoSeleccionado = await _repositorio.obtenerNodoPorId(id);
     } catch (e) {
-      _error = e.toString();
+      _error = apiErrorMessage(e);
     } finally {
       _cargando = false;
       notifyListeners();
@@ -71,7 +65,7 @@ class MonitoringProvider extends ChangeNotifier {
       _lecturas = await _repositorio.obtenerLecturas(nodoId,
           desde: desde, hasta: hasta);
     } catch (e) {
-      _error = e.toString();
+      _error = apiErrorMessage(e);
     } finally {
       _cargandoLecturas = false;
       notifyListeners();
@@ -82,14 +76,9 @@ class MonitoringProvider extends ChangeNotifier {
     _cargando = true;
     notifyListeners();
     try {
-      final r = await Future.wait([
-        _repositorio.obtenerConfiguracion(nodoId),
-        _repositorio.obtenerUmbrales(nodoId),
-      ]);
-      _config = r[0] as Esp32ConfigModel;
-      _umbrales = r[1] as ThresholdModel;
+      _config = await _repositorio.obtenerConfiguracion(nodoId);
     } catch (e) {
-      _error = e.toString();
+      _error = apiErrorMessage(e);
     } finally {
       _cargando = false;
       notifyListeners();
@@ -103,38 +92,7 @@ class MonitoringProvider extends ChangeNotifier {
       _config = await _repositorio.actualizarConfiguracion(config);
       return true;
     } catch (e) {
-      _error = e.toString();
-      return false;
-    } finally {
-      _procesando = false;
-      notifyListeners();
-    }
-  }
-
-  Future<bool> guardarUmbrales(ThresholdModel u) async {
-    _procesando = true;
-    notifyListeners();
-    try {
-      _umbrales = await _repositorio.actualizarUmbrales(u);
-      return true;
-    } catch (e) {
-      _error = e.toString();
-      return false;
-    } finally {
-      _procesando = false;
-      notifyListeners();
-    }
-  }
-
-  Future<bool> registrarVolteo(String nodoId) async {
-    _procesando = true;
-    notifyListeners();
-    try {
-      final volteo = await _repositorio.registrarVolteo(nodoId);
-      _ultimoVolteo[nodoId] = volteo;
-      return true;
-    } catch (e) {
-      _error = e.toString();
+      _error = apiErrorMessage(e);
       return false;
     } finally {
       _procesando = false;

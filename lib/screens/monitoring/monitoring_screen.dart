@@ -38,13 +38,6 @@ class _MonitoringView extends StatelessWidget {
       appBar: OryzaFlowAppBar(
         titulo: AppStrings.monitoreo,
         onMenuTap: () => Scaffold.of(context).openDrawer(),
-        acciones: [
-          IconButton(
-            icon: const Icon(Icons.tune_rounded),
-            tooltip: AppStrings.parametros,
-            onPressed: () => context.push(RouteNames.parametros),
-          ),
-        ],
       ),
       body: Consumer<MonitoringProvider>(
         builder: (_, prov, __) {
@@ -67,7 +60,7 @@ class _MonitoringView extends StatelessWidget {
               itemCount: prov.nodos.length,
               separatorBuilder: (_, __) =>
                   const SizedBox(height: AppDimensions.paddingS),
-              itemBuilder: (_, i) => _NodeCard(nodo: prov.nodos[i], prov: prov),
+              itemBuilder: (_, i) => _NodeCard(nodo: prov.nodos[i]),
             ),
           );
         },
@@ -78,14 +71,17 @@ class _MonitoringView extends StatelessWidget {
 
 class _NodeCard extends StatelessWidget {
   final NodeModel nodo;
-  final MonitoringProvider prov;
-  const _NodeCard({required this.nodo, required this.prov});
+  const _NodeCard({required this.nodo});
 
   @override
   Widget build(BuildContext context) {
     final color = SensorUtils.colorNodeStatus(nodo.estado);
-    final activo = nodo.estado == NodeStatus.activo ||
-        nodo.estado == NodeStatus.alerta;
+    // CA-002-02: si la última lectura es más vieja que el intervalo esperado (lo decide el backend) o el nodo
+    // está desconectado, no se muestra un valor viejo, en blanco o en cero: se muestra el aviso con la hora.
+    final tieneLectura = nodo.ultimaActualizacion.millisecondsSinceEpoch > 0;
+    final sinDatosRecientes = nodo.datosDesactualizados ||
+        nodo.estado == NodeStatus.desconectado ||
+        nodo.estado == NodeStatus.inactivo;
 
     return Card(
       child: InkWell(
@@ -132,22 +128,67 @@ class _NodeCard extends StatelessWidget {
                   ),
                 ],
               ),
-              if (activo) ...[
-                const SizedBox(height: 12),
+              const SizedBox(height: 12),
+              if (sinDatosRecientes)
+                _SinDatosRecientes(
+                    ultimaLectura: tieneLectura ? nodo.ultimaActualizacion : null)
+              else ...[
                 _ReadingsGrid(nodo: nodo),
                 const SizedBox(height: 8),
                 Text(
-                    'Actualizado: ${DateFormatter.tiempoTranscurrido(nodo.ultimaActualizacion)}',
+                    'Actualizado: ${DateFormatter.tiempoTranscurrido(nodo.ultimaActualizacion)} '
+                    '(${DateFormatter.hora(nodo.ultimaActualizacion)})',
                     style: const TextStyle(
                         fontSize: 10,
                         color: AppColors.textoSecundario)),
-                const SizedBox(height: 6),
-                const Divider(height: 1),
-                _VolteoAction(nodo: nodo, prov: prov),
               ],
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// CA-002-02: "Sin datos recientes del clima" junto a la hora de la última lectura válida.
+class _SinDatosRecientes extends StatelessWidget {
+  final DateTime? ultimaLectura;
+  const _SinDatosRecientes({this.ultimaLectura});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: AppColors.advertenciaFondo,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.advertencia.withAlpha(90)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.cloud_off_rounded, size: 20, color: AppColors.advertencia),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(AppStrings.sinDatosClima,
+                    style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                        color: AppColors.advertencia)),
+                const SizedBox(height: 2),
+                Text(
+                  ultimaLectura != null
+                      ? '${AppStrings.ultimaLecturaValida}: ${DateFormatter.fechaHora(ultimaLectura!)} '
+                          '(${DateFormatter.tiempoTranscurrido(ultimaLectura!)})'
+                      : '${AppStrings.ultimaLecturaValida}: sin lecturas registradas',
+                  style: const TextStyle(fontSize: 11, color: AppColors.textoSecundario),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -164,14 +205,15 @@ class _ReadingsGrid extends StatelessWidget {
           '${nodo.temperatura.toStringAsFixed(1)}°C', 'Temperatura'),
       (Icons.water_drop_outlined, AppColors.chartHumedad,
           '${nodo.humedad.toStringAsFixed(1)}%', 'Humedad'),
-      (Icons.air_rounded, AppColors.chartFlujoAire,
-          '${nodo.flujoAire.toStringAsFixed(1)}%', 'Flujo Aire'),
       (Icons.grass_rounded, AppColors.chartHumedadGrano,
-          '${nodo.humedadGrano.toStringAsFixed(1)}%', 'H. Grano'),
+          nodo.loteActivoId != null || nodo.humedadGrano > 0
+              ? '${nodo.humedadGrano.toStringAsFixed(1)}%'
+              : '—',
+          'H. Grano'),
     ];
 
     return GridView.count(
-      crossAxisCount: 4,
+      crossAxisCount: 3,
       mainAxisSpacing: 6,
       crossAxisSpacing: 6,
       childAspectRatio: 0.85,
@@ -223,74 +265,6 @@ class _ReadingTile extends StatelessWidget {
                   fontSize: 9, color: AppColors.textoSecundario),
               textAlign: TextAlign.center),
         ],
-      ),
-    );
-  }
-}
-
-class _VolteoAction extends StatelessWidget {
-  final NodeModel nodo;
-  final MonitoringProvider prov;
-  const _VolteoAction({required this.nodo, required this.prov});
-
-  @override
-  Widget build(BuildContext context) {
-    final ultimo = prov.ultimoVolteo(nodo.id);
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            ultimo == null
-                ? 'Sin volteos registrados'
-                : 'Último volteo: ${DateFormatter.fechaHora(ultimo.timestamp)} (manual)',
-            style: const TextStyle(
-                fontSize: 10, color: AppColors.textoSecundario),
-          ),
-        ),
-        TextButton.icon(
-          onPressed: prov.estaProcesando ? null : () => _confirmar(context),
-          icon: const Icon(Icons.autorenew_rounded, size: 16),
-          label: const Text(AppStrings.registrarVolteo),
-          style: TextButton.styleFrom(
-            visualDensity: VisualDensity.compact,
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Future<void> _confirmar(BuildContext context) async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text(AppStrings.volteoManual),
-        content: Text(
-          'Registrar un volteo manual del grano en "${nodo.nombre}". '
-          'Esta acción la decide y ejecuta el operario (volteo con rastrillo); '
-          'el sistema solo registra el método y la hora.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Registrar'),
-          ),
-        ],
-      ),
-    );
-    if (ok != true || !context.mounted) return;
-    final exito = await prov.registrarVolteo(nodo.id);
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(exito
-            ? 'Volteo manual registrado'
-            : (prov.error ?? 'No se pudo registrar el volteo')),
-        backgroundColor: exito ? AppColors.verde : AppColors.critico,
       ),
     );
   }

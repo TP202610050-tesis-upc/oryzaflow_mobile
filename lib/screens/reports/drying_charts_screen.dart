@@ -49,7 +49,7 @@ class _ChartsView extends StatelessWidget {
             body: const ShimmerList(),
           );
         }
-        if (prov.error != null) {
+        if (prov.error != null && lote == null) {
           return Scaffold(
             appBar: OryzaFlowAppBar(
                 titulo: titulo, mostrarBotonAtras: true),
@@ -66,6 +66,12 @@ class _ChartsView extends StatelessWidget {
           );
         }
 
+        // CA-009-02: con menos de dos estimaciones no hay curva que mostrar (no un gráfico vacío).
+        final estimaciones =
+            prov.lecturas.where((r) => r.tieneEstimacion).length;
+        final curvaInsuficiente =
+            !prov.estaCargandoLecturas && estimaciones < 2;
+
         return Scaffold(
           appBar: OryzaFlowAppBar(
             titulo: lote.codigo,
@@ -76,18 +82,28 @@ class _ChartsView extends StatelessWidget {
             children: [
               _LoteInfo(lote: lote),
               const SizedBox(height: AppDimensions.paddingM),
-              Text(AppStrings.ultimasDoceHoras,
+              Text(AppStrings.lecturasDelLote,
                   style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: AppDimensions.paddingS),
-              ...SensorTipo.values.map((t) => Padding(
-                    padding: const EdgeInsets.only(
-                        bottom: AppDimensions.paddingM),
-                    child: SensorChartCard(
-                      tipo: t,
-                      lecturas: prov.lecturas,
-                      estaCargando: prov.estaCargandoLecturas,
-                    ),
-                  )),
+              if (curvaInsuficiente)
+                const Card(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 24),
+                    child: EmptyStateWidget(
+                        icono: Icons.show_chart_rounded,
+                        mensaje: AppStrings.curvaSinDatos),
+                  ),
+                )
+              else
+                ...SensorTipo.values.map((t) => Padding(
+                      padding: const EdgeInsets.only(
+                          bottom: AppDimensions.paddingM),
+                      child: SensorChartCard(
+                        tipo: t,
+                        lecturas: prov.lecturas,
+                        estaCargando: prov.estaCargandoLecturas,
+                      ),
+                    )),
             ],
           ),
         );

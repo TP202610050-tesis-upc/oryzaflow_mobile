@@ -6,13 +6,12 @@ import '../../core/utils/date_formatter.dart';
 import '../../models/sensor_reading_model.dart';
 import 'loading_shimmer.dart';
 
-enum SensorTipo { temperatura, humedad, flujoAire, humedadGrano }
+enum SensorTipo { temperatura, humedad, humedadGrano }
 
 extension SensorTipoExtension on SensorTipo {
   String get titulo => switch (this) {
         SensorTipo.temperatura => 'Temperatura',
         SensorTipo.humedad => 'Humedad Ambiental',
-        SensorTipo.flujoAire => 'Flujo de Aire',
         SensorTipo.humedadGrano => 'Humedad del Grano',
       };
 
@@ -24,21 +23,18 @@ extension SensorTipoExtension on SensorTipo {
   Color get color => switch (this) {
         SensorTipo.temperatura => AppColors.chartTemperatura,
         SensorTipo.humedad => AppColors.chartHumedad,
-        SensorTipo.flujoAire => AppColors.chartFlujoAire,
         SensorTipo.humedadGrano => AppColors.chartHumedadGrano,
       };
 
   IconData get icono => switch (this) {
         SensorTipo.temperatura => Icons.thermostat_rounded,
         SensorTipo.humedad => Icons.water_drop_outlined,
-        SensorTipo.flujoAire => Icons.air_rounded,
         SensorTipo.humedadGrano => Icons.grass_rounded,
       };
 
-  double Function(SensorReadingModel) get extractor => switch (this) {
+  double? Function(SensorReadingModel) get extractor => switch (this) {
         SensorTipo.temperatura => (r) => r.temperatura,
         SensorTipo.humedad => (r) => r.humedad,
-        SensorTipo.flujoAire => (r) => r.flujoAire,
         SensorTipo.humedadGrano => (r) => r.humedadGrano,
       };
 }
@@ -98,7 +94,7 @@ class SensorChartCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: AppDimensions.paddingM),
-            if (lecturas.isEmpty)
+            if (_toSpots().isEmpty)
               SizedBox(
                 height: AppDimensions.chartHeight,
                 child: Center(
@@ -216,11 +212,12 @@ class SensorChartCard extends StatelessWidget {
   }
 
   List<FlSpot> _toSpots() {
-    return lecturas
-        .map((r) => FlSpot(
-              r.timestamp.millisecondsSinceEpoch.toDouble(),
-              tipo.extractor(r),
-            ))
-        .toList();
+    final spots = <FlSpot>[];
+    for (final r in lecturas) {
+      final y = tipo.extractor(r);
+      if (y == null) continue; // publicación tipo A (sin lote): no hay estimación de grano
+      spots.add(FlSpot(r.timestamp.millisecondsSinceEpoch.toDouble(), y));
+    }
+    return spots;
   }
 }

@@ -6,7 +6,6 @@ import '../../core/constants/app_dimensions.dart';
 import '../../core/constants/app_strings.dart';
 import '../../core/di/injection_container.dart';
 import '../../core/enums/batch_status.dart';
-import '../../core/enums/drying_stage.dart';
 import '../../core/router/route_names.dart';
 import '../../core/utils/date_formatter.dart';
 import '../../core/utils/sensor_utils.dart';
@@ -15,7 +14,9 @@ import '../../providers/batch_provider.dart';
 import '../../widgets/common/empty_state_widget.dart';
 import '../../widgets/common/error_state_widget.dart';
 import '../../widgets/common/loading_shimmer.dart';
+import '../../widgets/common/offline_banner.dart';
 import '../../widgets/common/oryzaflow_app_bar.dart';
+import '../../widgets/common/sync_status_button.dart';
 
 class BatchesListScreen extends StatelessWidget {
   const BatchesListScreen({super.key});
@@ -58,6 +59,7 @@ class _BatchesViewState extends State<_BatchesView>
       appBar: OryzaFlowAppBar(
         titulo: AppStrings.lotes,
         onMenuTap: () => Scaffold.of(context).openDrawer(),
+        acciones: const [SyncStatusButton()],
         bottom: TabBar(
           controller: _tabCtrl,
           tabs: const [
@@ -79,23 +81,35 @@ class _BatchesViewState extends State<_BatchesView>
       body: Consumer<BatchProvider>(
         builder: (_, prov, __) {
           if (prov.estaCargando) return const ShimmerList();
-          if (prov.error != null) {
+          if (prov.error != null && prov.lotes.isEmpty) {
             return ErrorStateWidget(
                 mensaje: prov.error, onReintentar: prov.cargarLotes);
           }
 
-          return TabBarView(
-            controller: _tabCtrl,
+          return Column(
             children: [
-              _LotesList(
-                lotes: prov.lotesActivos,
-                emptyMsg: 'Sin lotes activos',
-                onRefresh: prov.cargarLotes,
-              ),
-              _LotesList(
-                lotes: prov.lotesHistorial,
-                emptyMsg: 'Sin historial de lotes',
-                onRefresh: prov.cargarLotes,
+              if (prov.desdeCache && prov.cacheGuardadoEn != null)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(AppDimensions.paddingM,
+                      AppDimensions.paddingM, AppDimensions.paddingM, 0),
+                  child: OfflineBanner(guardadoEn: prov.cacheGuardadoEn!),
+                ),
+              Expanded(
+                child: TabBarView(
+                  controller: _tabCtrl,
+                  children: [
+                    _LotesList(
+                      lotes: prov.lotesActivos,
+                      emptyMsg: 'Sin lotes activos',
+                      onRefresh: prov.cargarLotes,
+                    ),
+                    _LotesList(
+                      lotes: prov.lotesHistorial,
+                      emptyMsg: 'Sin historial de lotes',
+                      onRefresh: prov.cargarLotes,
+                    ),
+                  ],
+                ),
               ),
             ],
           );
@@ -137,13 +151,16 @@ class _LotesList extends StatelessWidget {
   }
 }
 
+/// HU-015 (CA-015-01): cada lote muestra dueño, estado, humedad estimada, tiempo restante y alertas no atendidas.
 class _BatchCard extends StatelessWidget {
   final BatchModel lote;
   const _BatchCard({required this.lote});
 
   @override
   Widget build(BuildContext context) {
-    final color = SensorUtils.colorBatchStatus(lote.estado);
+    // HU-010 (CA-010-02): estado con los eventos registrados sin señal aplicados encima.
+    final visual = context.read<BatchProvider>().estadoVisual(lote);
+    final color = SensorUtils.colorBatchStatus(visual.estado);
 
     return Card(
       child: InkWell(
@@ -178,22 +195,74 @@ class _BatchCard extends StatelessWidget {
                             style: const TextStyle(
                                 fontSize: 12,
                                 color: AppColors.textoSecundario)),
+                        Text('Dueño: ${lote.dueno}',
+                            style: const TextStyle(
+                                fontSize: 12,
+                                color: AppColors.textoSecundario)),
                       ],
                     ),
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: color.withAlpha(20),
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: color.withAlpha(60)),
-                    ),
-                    child: Text(lote.estado.displayName,
-                        style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: color)),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: color.withAlpha(20),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: color.withAlpha(60)),
+                        ),
+                        child: Text(
+                            visual.recogidaPendiente
+                                ? '${visual.estado.displayName} (pendiente)'
+                                : visual.estado.displayName,
+                            style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: color)),
+                      ),
+                      if (visual.pendientes > 0 || visual.errores > 0) ...[
+                        const SizedBox(height: 4),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                                visual.errores > 0
+                                    ? Icons.sync_problem_rounded
+                                    : Icons.cloud_upload_outlined,
+                                size: 12,
+                                color: visual.errores > 0
+                                    ? AppColors.critico
+                                    : AppColors.advertencia),
+                            const SizedBox(width: 2),
+                            Text('${visual.pendientes + visual.errores}',
+                                style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: visual.errores > 0
+                                        ? AppColors.critico
+                                        : AppColors.advertencia)),
+                          ],
+                        ),
+                      ],
+                      if (lote.alertasNoLeidas > 0) ...[
+                        const SizedBox(height: 4),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.notifications_active_rounded,
+                                size: 12, color: AppColors.advertencia),
+                            const SizedBox(width: 2),
+                            Text('${lote.alertasNoLeidas}',
+                                style: const TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.advertencia)),
+                          ],
+                        ),
+                      ],
+                    ],
                   ),
                 ],
               ),
@@ -216,18 +285,9 @@ class _BatchCard extends StatelessWidget {
                   ),
                 ],
               ),
-              if (lote.etapaActual != null) ...[
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    const Icon(Icons.play_circle_outline,
-                        size: 14, color: AppColors.informacion),
-                    const SizedBox(width: 4),
-                    Text(lote.etapaActual!.displayName,
-                        style: const TextStyle(
-                            fontSize: 11, color: AppColors.informacion)),
-                  ],
-                ),
+              if (visual.estado == BatchStatus.enProceso) ...[
+                const SizedBox(height: 8),
+                _EstimacionRow(lote: lote),
               ],
             ],
           ),
@@ -237,21 +297,74 @@ class _BatchCard extends StatelessWidget {
   }
 }
 
-class _InfoChip extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  const _InfoChip({required this.icon, required this.label});
+/// Humedad estimada y tiempo restante del lote en proceso (con las banderas del backend).
+class _EstimacionRow extends StatelessWidget {
+  final BatchModel lote;
+  const _EstimacionRow({required this.lote});
 
   @override
   Widget build(BuildContext context) {
+    final est = lote.estimacion;
+    if (est == null) {
+      return const Text('Sin estimación aún',
+          style: TextStyle(fontSize: 11, color: AppColors.textoSecundario));
+    }
+    final stale = est.desactualizada;
+    final humColor = stale ? AppColors.textoSecundario : AppColors.chartHumedadGrano;
+    final restante = est.noLlegaHoy
+        ? AppStrings.noLlegaraHoy
+        : est.restante != null
+            ? 'Faltan ${DateFormatter.duracion(est.restante!)}'
+            : '—';
+    return Wrap(
+      spacing: 8,
+      runSpacing: 4,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        _InfoChip(
+            icon: Icons.grass_rounded,
+            color: humColor,
+            label: est.humedadGrano != null
+                ? 'Est. ${est.humedadGrano!.toStringAsFixed(1)}% (${DateFormatter.hora(est.ts)})'
+                : 'Est. —'),
+        _InfoChip(
+            icon: est.noLlegaHoy ? Icons.nights_stay_rounded : Icons.timer_outlined,
+            color: est.noLlegaHoy ? AppColors.informacion : null,
+            label: restante),
+        if (stale)
+          const _InfoChip(
+              icon: Icons.history_toggle_off_rounded,
+              color: AppColors.advertencia,
+              label: AppStrings.datoDesactualizado),
+        if (lote.porVerificar)
+          const _InfoChip(
+              icon: Icons.rule_rounded,
+              color: AppColors.advertencia,
+              label: AppStrings.porVerificar),
+      ],
+    );
+  }
+}
+
+class _InfoChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color? color;
+  const _InfoChip({required this.icon, required this.label, this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = color ?? AppColors.textoSecundario;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 12, color: AppColors.textoSecundario),
+        Icon(icon, size: 12, color: c),
         const SizedBox(width: 3),
         Text(label,
-            style: const TextStyle(
-                fontSize: 11, color: AppColors.textoSecundario)),
+            style: TextStyle(
+                fontSize: 11,
+                color: c,
+                fontWeight: color != null ? FontWeight.w600 : FontWeight.normal)),
       ],
     );
   }

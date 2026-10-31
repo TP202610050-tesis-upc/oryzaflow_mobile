@@ -17,6 +17,8 @@ class RouteNames {
   static const String editarSilo = '/silos/editar';
   static const String variedades = '/silos/variedades';
   static const String editarVariedad = '/silos/variedades/editar';
+  static const String perfilesSecado = '/silos/perfiles';
+  static const String editarPerfilSecado = '/silos/perfiles/editar';
   static const String disponibilidad = '/silos/disponibilidad';
 
   // Módulo 4
@@ -24,10 +26,11 @@ class RouteNames {
   static const String nuevoLote = '/lotes/nuevo';
   static const String detalleLote = '/lotes/:loteId';
   static String detalleLotePath(String id) => '/lotes/$id';
+  static const String lecturasLote = '/lotes/:loteId/lecturas';
+  static String lecturasLotePath(String id) => '/lotes/$id/lecturas';
 
   // Módulo 5
   static const String monitoreo = '/monitoreo';
-  static const String parametros = '/monitoreo/parametros';
   static const String configEsp32 = '/monitoreo/esp32';
   static const String detalleNodo = '/monitoreo/:nodoId';
   static String detalleNodoPath(String id) => '/monitoreo/$id';
@@ -52,4 +55,7 @@ class RouteNames {
 
   // Perfil propio
   static const String editarPerfil = '/perfil/editar';
+
+  // Registro sin señal (HU-010, CA-010-02)
+  static const String sincronizacion = '/sincronizacion';
 }

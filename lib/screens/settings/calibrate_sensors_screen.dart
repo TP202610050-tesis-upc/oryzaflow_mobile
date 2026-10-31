@@ -167,7 +167,6 @@ class _OffsetForm extends StatefulWidget {
 class _OffsetFormState extends State<_OffsetForm> {
   late TextEditingController _offsetTempCtrl;
   late TextEditingController _offsetHumCtrl;
-  late TextEditingController _offsetFlujoCtrl;
   late TextEditingController _offsetGranoCtrl;
   bool _inicializado = false;
 
@@ -176,7 +175,6 @@ class _OffsetFormState extends State<_OffsetForm> {
     super.initState();
     _offsetTempCtrl = TextEditingController(text: '0.0');
     _offsetHumCtrl = TextEditingController(text: '0.0');
-    _offsetFlujoCtrl = TextEditingController(text: '0.0');
     _offsetGranoCtrl = TextEditingController(text: '0.0');
     WidgetsBinding.instance.addPostFrameCallback((_) {
       widget.prov.cargarConfig(widget.nodo.id);
@@ -190,7 +188,6 @@ class _OffsetFormState extends State<_OffsetForm> {
       final c = widget.prov.config!;
       _offsetTempCtrl.text = c.offsetTemperatura.toString();
       _offsetHumCtrl.text = c.offsetHumedad.toString();
-      _offsetFlujoCtrl.text = c.offsetFlujoAire.toString();
       _offsetGranoCtrl.text = c.offsetHumedadGrano.toString();
       _inicializado = true;
     }
@@ -200,7 +197,6 @@ class _OffsetFormState extends State<_OffsetForm> {
   void dispose() {
     _offsetTempCtrl.dispose();
     _offsetHumCtrl.dispose();
-    _offsetFlujoCtrl.dispose();
     _offsetGranoCtrl.dispose();
     super.dispose();
   }
@@ -212,7 +208,6 @@ class _OffsetFormState extends State<_OffsetForm> {
     final updated = config.copyWith(
       offsetTemperatura: double.tryParse(_offsetTempCtrl.text) ?? config.offsetTemperatura,
       offsetHumedad: double.tryParse(_offsetHumCtrl.text) ?? config.offsetHumedad,
-      offsetFlujoAire: double.tryParse(_offsetFlujoCtrl.text) ?? config.offsetFlujoAire,
       offsetHumedadGrano: double.tryParse(_offsetGranoCtrl.text) ?? config.offsetHumedadGrano,
     );
     final ok = await widget.prov.guardarConfig(updated);
@@ -253,13 +248,6 @@ class _OffsetFormState extends State<_OffsetForm> {
           color: AppColors.chartHumedad,
           unidad: '%',
           ctrl: _offsetHumCtrl,
-        ),
-        _OffsetTile(
-          titulo: AppStrings.flujoAire,
-          icon: Icons.air_rounded,
-          color: AppColors.chartFlujoAire,
-          unidad: '%',
-          ctrl: _offsetFlujoCtrl,
         ),
         _OffsetTile(
           titulo: AppStrings.humedadGrano,

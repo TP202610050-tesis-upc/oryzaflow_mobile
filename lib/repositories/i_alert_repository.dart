@@ -7,4 +7,8 @@ abstract class IAlertRepository {
   Future<void> marcarTodasComoLeidas();
   Future<void> eliminarAlerta(String id);
   Future<void> restaurarAlerta(AlertModel alerta);
+
+  /// Token FCM del dispositivo (HU-012): POST/DELETE /notifications/device-tokens.
+  Future<void> registrarTokenDispositivo(String token, {String plataforma = 'android'});
+  Future<void> eliminarTokenDispositivo(String token);
 }

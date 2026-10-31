@@ -6,7 +6,7 @@ import '../../core/constants/app_dimensions.dart';
 import '../../core/constants/app_strings.dart';
 import '../../core/di/injection_container.dart';
 import '../../core/router/route_names.dart';
-import '../../core/enums/drying_stage.dart';
+import '../../core/enums/batch_status.dart';
 import '../../core/utils/date_formatter.dart';
 import '../../core/utils/sensor_utils.dart';
 import '../../models/alert_model.dart';
@@ -19,6 +19,7 @@ import '../../widgets/common/empty_state_widget.dart';
 import '../../widgets/common/error_state_widget.dart';
 import '../../widgets/common/loading_shimmer.dart';
 import '../../widgets/common/oryzaflow_app_bar.dart';
+import '../../widgets/common/sync_status_button.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -43,6 +44,7 @@ class _DashboardView extends StatelessWidget {
         titulo: AppStrings.dashboard,
         onMenuTap: () => Scaffold.of(context).openDrawer(),
         acciones: [
+          const SyncStatusButton(),
           IconButton(
             icon: const Icon(Icons.notifications_outlined),
             onPressed: () => context.go(RouteNames.alertas),
@@ -286,7 +288,7 @@ class _LoteTile extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            Text(lote.etapaActual?.displayName ?? '',
+            Text(lote.estado.displayName,
                 style: const TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w500,
@@ -362,9 +364,21 @@ class _AlertaTile extends StatelessWidget {
             style: const TextStyle(fontSize: 13),
             maxLines: 2,
             overflow: TextOverflow.ellipsis),
-        subtitle: Text(
-            '${alerta.nodoNombre} • ${DateFormatter.tiempoTranscurrido(alerta.timestamp)}',
-            style: const TextStyle(fontSize: 11)),
+        subtitle: Text.rich(
+          TextSpan(
+            text:
+                '${alerta.nodoNombre} • ${DateFormatter.tiempoTranscurrido(alerta.timestamp)}',
+            children: [
+              // CA-015-02: reenviada al supervisor por no atenderse a tiempo.
+              if (alerta.escalada)
+                const TextSpan(
+                    text: ' • ${AppStrings.reenviada}',
+                    style: TextStyle(
+                        color: AppColors.critico, fontWeight: FontWeight.w600)),
+            ],
+          ),
+          style: const TextStyle(fontSize: 11),
+        ),
         trailing: alerta.leida
             ? null
             : Container(

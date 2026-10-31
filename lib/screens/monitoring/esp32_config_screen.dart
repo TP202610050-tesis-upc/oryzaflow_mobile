@@ -280,7 +280,6 @@ class _ConfigFormState extends State<_ConfigForm> {
                 valorActual: switch (t) {
                   SensorTipo.temperatura => widget.nodo.temperatura,
                   SensorTipo.humedad => widget.nodo.humedad,
-                  SensorTipo.flujoAire => widget.nodo.flujoAire,
                   SensorTipo.humedadGrano => widget.nodo.humedadGrano,
                 },
               ),

@@ -33,7 +33,7 @@ class _EditSiloScreenState extends State<EditSiloScreen> {
     _nombreCtrl = TextEditingController(text: s?.nombre ?? '');
     _ubicacionCtrl = TextEditingController(text: s?.ubicacion ?? '');
     _capacidadCtrl = TextEditingController(
-        text: s != null ? s.capacidadToneladas.toString() : '');
+        text: s != null ? s.capacidadKg.toString() : '');
     _serialCtrl = TextEditingController(text: s?.serialEsp32 ?? '');
     if (s != null) _estado = s.estado;
   }
@@ -55,10 +55,11 @@ class _EditSiloScreenState extends State<EditSiloScreen> {
       id: widget.silo?.id ?? '',
       nombre: _nombreCtrl.text.trim(),
       ubicacion: _ubicacionCtrl.text.trim(),
-      capacidadToneladas: double.parse(_capacidadCtrl.text),
+      capacidadKg: double.parse(_capacidadCtrl.text),
+      superficie: widget.silo?.superficie ?? 0,
       estado: _estado,
       loteActivoId: widget.silo?.loteActivoId,
-      ocupacionActualToneladas: widget.silo?.ocupacionActualToneladas,
+      ocupacionActualKg: widget.silo?.ocupacionActualKg,
       serialEsp32: serial.isEmpty ? null : serial,
     );
 

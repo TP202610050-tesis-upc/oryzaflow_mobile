@@ -1,6 +1,8 @@
 import 'package:equatable/equatable.dart';
 import '../core/enums/batch_status.dart';
-import '../core/enums/drying_stage.dart';
+import '../core/enums/producto_destino.dart';
+import '../core/network/json_mappers.dart';
+import 'batch_estimation_model.dart';
 
 class BatchModel extends Equatable {
   final String id;
@@ -14,7 +16,6 @@ class BatchModel extends Equatable {
   final String nodoId;
   final String nodoNombre;
   final BatchStatus estado;
-  final DryingStage? etapaActual;
   final double pesoKg;
   final double humedadInicial;
   final double? humedadFinal;
@@ -23,6 +24,23 @@ class BatchModel extends Equatable {
   final DateTime? fechaFin;
   final String operadorId;
   final String operadorNombre;
+
+  // Campos de campaña (F7) y reglas de excepción (Cuaderno 4, 27/09/2026).
+  /// Destino comercial: obligatorio al registrar (CA-006-02).
+  final ProductoDestino? producto;
+  final double? metaDeclarada;
+  /// Meta efectiva (% b.h.) que usa el nodo y las alertas: declarada → perfil → valor por defecto del backend.
+  final double? metaObjetivo;
+  /// Código del dueño del grano (anexo A del protocolo); "dueño" en la lista de lotes (HU-015).
+  final String? duenoCodigo;
+  /// CA-013-02: la estimación difiere del medidor > 1,0 pp; no se da el lote por listo solo con ella.
+  final bool porVerificar;
+  final double? ultimaDiferenciaPp;
+  final int alertasNoLeidas;
+  /// HU-001/HU-003: última estimación del nodo con su antigüedad y proyección (null si no está en proceso).
+  final BatchEstimationModel? estimacion;
+  /// F3: hay un segmento diario abierto (lote descubierto). `null` = el backend no lo informa.
+  final bool? segmentoAbierto;
 
   const BatchModel({
     required this.id,
@@ -41,10 +59,18 @@ class BatchModel extends Equatable {
     required this.fechaIngreso,
     required this.operadorId,
     required this.operadorNombre,
-    this.etapaActual,
     this.humedadFinal,
     this.fechaInicio,
     this.fechaFin,
+    this.producto,
+    this.metaDeclarada,
+    this.metaObjetivo,
+    this.duenoCodigo,
+    this.porVerificar = false,
+    this.ultimaDiferenciaPp,
+    this.alertasNoLeidas = 0,
+    this.estimacion,
+    this.segmentoAbierto,
   });
 
   bool get estaActivo => estado == BatchStatus.enProceso;
@@ -53,12 +79,63 @@ class BatchModel extends Equatable {
           ? fechaFin!.difference(fechaInicio!)
           : null;
 
+  /// Dueño del grano si se registró; si no, el operador que creó el lote.
+  String get dueno =>
+      (duenoCodigo != null && duenoCodigo!.isNotEmpty) ? duenoCodigo! : operadorNombre;
+
+  factory BatchModel.fromJson(Map<String, dynamic> json) => BatchModel(
+        id: json['id'].toString(),
+        codigo: json['codigo'] as String? ?? '',
+        siloId: json['siloId'].toString(),
+        siloNombre: json['siloNombre'] as String? ?? '',
+        variedadId: json['variedadId'].toString(),
+        variedadNombre: json['variedadNombre'] as String? ?? '',
+        perfilSecadoId: json['perfilSecadoId'].toString(),
+        perfilSecadoNombre: json['perfilSecadoNombre'] as String? ?? '',
+        nodoId: json['nodoId'].toString(),
+        nodoNombre: json['nodoNombre'] as String? ?? '',
+        estado: batchStatusFromApi(json['estado'] as String),
+        pesoKg: parseDouble(json['pesoKg']),
+        humedadInicial: parseDouble(json['humedadInicial']),
+        humedadFinal: parseDoubleNullable(json['humedadFinal']),
+        fechaIngreso: parseFecha(json['fechaIngreso']),
+        fechaInicio: parseFechaNullable(json['fechaInicio']),
+        fechaFin: parseFechaNullable(json['fechaFin']),
+        operadorId: json['operadorId'].toString(),
+        operadorNombre: json['operadorNombre'] as String? ?? '',
+        producto: productoDestinoFromApi(json['producto'] as String?),
+        metaDeclarada: parseDoubleNullable(json['metaDeclarada']),
+        metaObjetivo: parseDoubleNullable(json['metaObjetivo']),
+        duenoCodigo: json['duenoCodigo'] as String?,
+        porVerificar: json['porVerificar'] as bool? ?? false,
+        ultimaDiferenciaPp: parseDoubleNullable(json['ultimaDiferenciaPp']),
+        alertasNoLeidas: (json['alertasNoLeidas'] as num?)?.toInt() ?? 0,
+        estimacion: json['estimacion'] is Map<String, dynamic>
+            ? BatchEstimationModel.fromJson(json['estimacion'] as Map<String, dynamic>)
+            : null,
+        segmentoAbierto: json['segmentoAbierto'] as bool?,
+      );
+
+  /// Payload de creación (CreateBatchResource). El operador lo toma el backend del token.
+  /// `producto` es obligatorio en el backend (CA-006-02).
+  Map<String, dynamic> toCreateJson() => {
+        'siloId': int.tryParse(siloId),
+        'variedadId': int.tryParse(variedadId),
+        'perfilSecadoId': int.tryParse(perfilSecadoId),
+        'nodoId': int.tryParse(nodoId),
+        'pesoKg': pesoKg,
+        'humedadInicial': humedadInicial,
+        if (producto != null) 'producto': productoDestinoToApi(producto!),
+        if (metaDeclarada != null) 'metaDeclarada': metaDeclarada,
+        if (duenoCodigo != null && duenoCodigo!.isNotEmpty) 'duenoCodigo': duenoCodigo,
+      };
+
   BatchModel copyWith({
     BatchStatus? estado,
-    DryingStage? etapaActual,
     double? humedadFinal,
     DateTime? fechaInicio,
     DateTime? fechaFin,
+    bool? segmentoAbierto,
   }) =>
       BatchModel(
         id: id,
@@ -72,7 +149,6 @@ class BatchModel extends Equatable {
         nodoId: nodoId,
         nodoNombre: nodoNombre,
         estado: estado ?? this.estado,
-        etapaActual: etapaActual ?? this.etapaActual,
         pesoKg: pesoKg,
         humedadInicial: humedadInicial,
         humedadFinal: humedadFinal ?? this.humedadFinal,
@@ -81,8 +157,18 @@ class BatchModel extends Equatable {
         fechaFin: fechaFin ?? this.fechaFin,
         operadorId: operadorId,
         operadorNombre: operadorNombre,
+        producto: producto,
+        metaDeclarada: metaDeclarada,
+        metaObjetivo: metaObjetivo,
+        duenoCodigo: duenoCodigo,
+        porVerificar: porVerificar,
+        ultimaDiferenciaPp: ultimaDiferenciaPp,
+        alertasNoLeidas: alertasNoLeidas,
+        estimacion: estimacion,
+        segmentoAbierto: segmentoAbierto ?? this.segmentoAbierto,
       );
 
   @override
-  List<Object?> get props => [id, estado, etapaActual, humedadFinal];
+  List<Object?> get props =>
+      [id, estado, humedadFinal, porVerificar, estimacion, segmentoAbierto];
 }

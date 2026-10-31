@@ -37,6 +37,7 @@ class SensorUtils {
         SiloStatus.disponible => AppColors.siloDisponible,
         SiloStatus.ocupado => AppColors.siloOcupado,
         SiloStatus.mantenimiento => AppColors.siloMantenimiento,
+        SiloStatus.deBaja => AppColors.textoSecundario,
       };
 
   static Color colorBatchStatus(BatchStatus estado) => switch (estado) {

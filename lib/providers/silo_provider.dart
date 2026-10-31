@@ -82,6 +82,20 @@ class SiloProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> cargarPerfiles() async {
+    _cargando = true;
+    _error = null;
+    notifyListeners();
+    try {
+      _perfiles = List.of(await _profileRepo.obtenerPerfiles());
+    } catch (e) {
+      _error = e.toString();
+    } finally {
+      _cargando = false;
+      notifyListeners();
+    }
+  }
+
   Future<void> cargarDisponibilidad() async {
     _cargando = true;
     notifyListeners();
@@ -133,6 +147,45 @@ class SiloProvider extends ChangeNotifier {
         final idx = _variedades.indexWhere((x) => x.id == actualizado.id);
         if (idx != -1) _variedades[idx] = actualizado;
       }
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      return false;
+    } finally {
+      _guardando = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> guardarPerfil(DryingProfileModel p,
+      {required bool esNuevo}) async {
+    _guardando = true;
+    notifyListeners();
+    try {
+      if (esNuevo) {
+        final nuevo = await _profileRepo.crearPerfil(p);
+        _perfiles.add(nuevo);
+      } else {
+        final actualizado = await _profileRepo.actualizarPerfil(p);
+        final idx = _perfiles.indexWhere((x) => x.id == actualizado.id);
+        if (idx != -1) _perfiles[idx] = actualizado;
+      }
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      return false;
+    } finally {
+      _guardando = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> eliminarPerfil(String id) async {
+    _guardando = true;
+    notifyListeners();
+    try {
+      await _profileRepo.eliminarPerfil(id);
+      _perfiles.removeWhere((p) => p.id == id);
       return true;
     } catch (e) {
       _error = e.toString();
